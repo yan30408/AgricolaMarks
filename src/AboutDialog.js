@@ -1,15 +1,18 @@
 import React from "react";
 import { withStyles } from "@material-ui/core/styles";
-import Dialog from "@material-ui/core/Dialog";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import Typography from "@material-ui/core/Typography";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Slide
+} from "@material-ui/core";
+
 import CloseIcon from "@material-ui/icons/Close";
-import Slide from "@material-ui/core/Slide";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogContentText from "@material-ui/core/DialogContentText";
-import DialogTitle from "@material-ui/core/DialogTitle";
 
 const styles = theme => ({
   appBar: {
@@ -55,7 +58,7 @@ function ShowHistory(props) {
 class AboutDialog extends React.Component {
   render() {
     const { classes } = this.props;
-    const version = 1.5;
+    const version = process.env.REACT_APP_VERSION;
 
     return (
       <div>
@@ -90,6 +93,15 @@ class AboutDialog extends React.Component {
               <Typography variant="h6" color="inherit" className={classes.flex}>
                 History
               </Typography>
+              <ShowHistory
+                classes={classes}
+                version={"1.5.1"}
+                date={"2020.1.29"}
+                changes={[
+                  "favicon や title を適切なものに変更",
+                  "MIT license のリンクを適切なものに変更"
+                ]}
+              />
               <ShowHistory
                 classes={classes}
                 version={"1.5"}
@@ -153,7 +165,7 @@ class AboutDialog extends React.Component {
                 License
               </Typography>
               Copyright (c) 2018 yan3 Released under the{" "}
-              <a href="https://github.com/YukinobuKurata/YouTubeMagicBuyButton/blob/master/MIT-LICENSE.txt">
+              <a href="https://opensource.org/licenses/mit-license.php">
                 MIT license
               </a>
             </DialogContentText>

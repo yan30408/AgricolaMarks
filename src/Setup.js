@@ -1,21 +1,25 @@
 import React from "react";
 import store from "store";
 import { withStyles } from "@material-ui/core/styles";
-import Dialog from "@material-ui/core/Dialog";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import Divider from "@material-ui/core/Divider";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
+import {
+  IconButton,
+  List,
+  ListItem,
+  Dialog,
+  Toolbar,
+  AppBar,
+  Typography,
+  Divider,
+  TextField,
+  Slide,
+  Menu,
+  MenuItem,
+  InputAdornment
+} from "@material-ui/core";
+
 import CloseIcon from "@material-ui/icons/Close";
 import PlayersIcon from "@material-ui/icons/FolderShared";
-import Typography from "@material-ui/core/Typography";
-import TextField from "@material-ui/core/TextField";
-import Menu from "@material-ui/core/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
-import Slide from "@material-ui/core/Slide";
-import InputAdornment from "@material-ui/core/InputAdornment";
+
 import { Colors } from "./Constants";
 
 const styles = theme => ({

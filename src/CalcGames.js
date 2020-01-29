@@ -1,23 +1,27 @@
 import React from "react";
 import store from "store";
 import { withStyles } from "@material-ui/core/styles";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
-import AppBar from "@material-ui/core/AppBar";
-import Typography from "@material-ui/core/Typography";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import Button from "@material-ui/core/Button";
+import {
+  Button,
+  IconButton,
+  Tabs,
+  Tab,
+  Toolbar,
+  CssBaseline,
+  AppBar,
+  Typography,
+  MenuItem,
+  Menu
+} from "@material-ui/core";
+
 import MenuIcon from "@material-ui/icons/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
-import Menu from "@material-ui/core/Menu";
+
 import CalcCore from "./CalcCore";
 import Result from "./Result";
 import Setup from "./Setup";
 import AlertDialog from "./AlertDialog";
 import AboutDialog from "./AboutDialog";
 import { ScoreByRoomType, Orders, Colors } from "./Constants";
-import CssBaseline from "@material-ui/core/CssBaseline";
 import rsScroller from "react-smooth-scroller";
 
 function TabContainer(props) {

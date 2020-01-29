@@ -1,20 +1,24 @@
 import React from "react";
 import { withStyles } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
-import Dialog from "@material-ui/core/Dialog";
-import ListItemText from "@material-ui/core/ListItemText";
-import ListItem from "@material-ui/core/ListItem";
-import List from "@material-ui/core/List";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import Typography from "@material-ui/core/Typography";
+import {
+  Button,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Toolbar,
+  Dialog,
+  AppBar,
+  Typography,
+  Avatar,
+  ImageIcon,
+  Slide
+} from "@material-ui/core";
+
 import CloseIcon from "@material-ui/icons/Close";
-import Avatar from "@material-ui/core/Avatar";
-import ImageIcon from "@material-ui/icons/Image";
-import Slide from "@material-ui/core/Slide";
-import AlertDialog from "./AlertDialog";
 import RestartIcon from "@material-ui/icons/Refresh";
+
+import AlertDialog from "./AlertDialog";
 
 const styles = theme => ({
   appBar: {

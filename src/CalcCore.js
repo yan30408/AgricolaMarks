@@ -1,19 +1,21 @@
 import React from "react";
 import { withStyles } from "@material-ui/core/styles";
-import Paper from "@material-ui/core/Paper";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
-import Radio from "@material-ui/core/Radio";
-import RadioGroup from "@material-ui/core/RadioGroup";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import AppBar from "@material-ui/core/AppBar";
-import Typography from "@material-ui/core/Typography";
-import MenuItem from "@material-ui/core/MenuItem";
-import TextField from "@material-ui/core/TextField";
+import {
+  Paper,
+  Tabs,
+  Tab,
+  Radio,
+  RadioGroup,
+  AppBar,
+  Typography,
+  MenuItem,
+  TextField,
+  FormControlLabel,
+  Grid,
+  Hidden,
+  Tooltip
+} from "@material-ui/core";
 import { ScoreByRoomType } from "./Constants";
-import Grid from "@material-ui/core/Grid";
-import Hidden from "@material-ui/core/Hidden";
-import Tooltip from "@material-ui/core/Tooltip";
 
 const styles = {
   root: {
@@ -26,22 +28,22 @@ const styles = {
 };
 
 const imageUrl = {
-  Fields: "/images/Fields.png",
-  Pastures: "/images/Fence.png",
-  Grain: "/images/Grain.png",
-  Vegetables: "/images/Vege.png",
-  Sheep: "/images/Sheep.png",
-  "Wild boar": "/images/Boar.png",
-  Cattle: "/images/Cattle.png",
-  "Unused Spaces": "/images/Space.png",
-  Stable: "/images/Stable.png",
-  Rooms_Wood: "/images/Room_Wood.png",
-  Rooms_Clay: "/images/Room_Clay.png",
-  Rooms_Stone: "/images/Room_Stone.png",
-  Family: "/images/Family.png",
-  Beggar: "/images/Beggar.png",
-  Improvement: "/images/Improvement.png",
-  Bonus: "/images/Bonus.png"
+  Fields: `${process.env.PUBLIC_URL}/images/Fields.png`,
+  Pastures: `${process.env.PUBLIC_URL}/images/Fence.png`,
+  Grain: `${process.env.PUBLIC_URL}/images/Grain.png`,
+  Vegetables: `${process.env.PUBLIC_URL}/images/Vege.png`,
+  Sheep: `${process.env.PUBLIC_URL}/images/Sheep.png`,
+  "Wild boar": `${process.env.PUBLIC_URL}/images/Boar.png`,
+  Cattle: `${process.env.PUBLIC_URL}/images/Cattle.png`,
+  "Unused Spaces": `${process.env.PUBLIC_URL}/images/Space.png`,
+  Stable: `${process.env.PUBLIC_URL}/images/Stable.png`,
+  Rooms_Wood: `${process.env.PUBLIC_URL}/images/Room_Wood.png`,
+  Rooms_Clay: `${process.env.PUBLIC_URL}/images/Room_Clay.png`,
+  Rooms_Stone: `${process.env.PUBLIC_URL}/images/Room_Stone.png`,
+  Family: `${process.env.PUBLIC_URL}/images/Family.png`,
+  Beggar: `${process.env.PUBLIC_URL}/images/Beggar.png`,
+  Improvement: `${process.env.PUBLIC_URL}/images/Improvement.png`,
+  Bonus: `${process.env.PUBLIC_URL}/images/Bonus.png`
 };
 
 class CalcPlayer extends React.Component {
