@@ -16,13 +16,16 @@ import Result from "./Result";
 import Setup from "./Setup";
 import AlertDialog from "./AlertDialog";
 import AboutDialog from "./AboutDialog";
-import { ScoreByRoomType, Orders, Colors} from "./Constants";
-import CssBaseline from '@material-ui/core/CssBaseline';
-import rsScroller from 'react-smooth-scroller';
+import { ScoreByRoomType, Orders, Colors } from "./Constants";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import rsScroller from "react-smooth-scroller";
 
 function TabContainer(props) {
   return (
-    <Typography component="div" style={{ padding: '50px 10px', backgroundColor: props.color}}>
+    <Typography
+      component="div"
+      style={{ padding: "50px 10px", backgroundColor: props.color }}
+    >
       {props.children}
     </Typography>
   );
@@ -38,21 +41,20 @@ const styles = {
   }
 };
 
-
-function getDefaultPlayersInfo(){
+function getDefaultPlayersInfo() {
   return Array(5)
-        .fill(0)
-        .map((value, index) => {
-          return { 
-            id:index,
-            name: null,
-            color: Colors[Object.keys(Colors)[index]],
-            order: null
-          };
-        });
+    .fill(0)
+    .map((value, index) => {
+      return {
+        id: index,
+        name: null,
+        color: Colors[Object.keys(Colors)[index]],
+        order: null
+      };
+    });
 }
 
-function getDefaultPlayerReults(){
+function getDefaultPlayerReults() {
   return Array(5)
     .fill(0)
     .map((value, index) => {
@@ -75,34 +77,32 @@ function getDefaultPlayerReults(){
           Family: { value: 0, score: 6 },
           Beggar: { value: 0, score: 0 },
           Improvement: { value: 0, score: 0 },
-          Bonus: { value: 14, score: 0 } 
+          Bonus: { value: 14, score: 0 }
         },
         score: {
           inFarm: -1,
           outside: 0,
-          total: -1,
+          total: -1
         },
-        id: -1,
+        id: -1
       };
     });
 }
 
-
 class CalcGames extends React.Component {
-  
-   state = {
-      currentPlayer: store.get("currentPlayer") || 0,
-      anchorEl: null,
-      isOpenResult: store.get("isOpenResult") || false,
-      isOpenSetup: store.get("isOpenSetup") || false,
-      isOpenAllClear: false,
-      isOpenAbout: false,
-      playersInfo: store.get("playersInfo") || getDefaultPlayersInfo(),
-      playerResults: store.get("playerResults") || getDefaultPlayerReults(),
-    };
+  state = {
+    currentPlayer: store.get("currentPlayer") || 0,
+    anchorEl: null,
+    isOpenResult: store.get("isOpenResult") || false,
+    isOpenSetup: store.get("isOpenSetup") || false,
+    isOpenAllClear: false,
+    isOpenAbout: false,
+    playersInfo: store.get("playersInfo") || getDefaultPlayersInfo(),
+    playerResults: store.get("playerResults") || getDefaultPlayerReults()
+  };
 
   onChangeCurrentPlayer = (event, value) => {
-    rsScroller.scrollToTop({duration: 500});
+    rsScroller.scrollToTop({ duration: 500 });
     this.setState({ currentPlayer: value });
     store.set("currentPlayer", value);
   };
@@ -149,7 +149,7 @@ class CalcGames extends React.Component {
   onChangePlayer = event => {
     let playerResults = this.state.playerResults;
     let playersInfo = this.state.playersInfo;
-    if (playerResults[this.state.currentPlayer].id !== -1){
+    if (playerResults[this.state.currentPlayer].id !== -1) {
       playersInfo[playerResults[this.state.currentPlayer].id].order = null;
     }
     playerResults[this.state.currentPlayer].id = event.target.value;
@@ -193,10 +193,10 @@ class CalcGames extends React.Component {
     const playersInfo = getDefaultPlayersInfo();
     const playerResults = getDefaultPlayerReults();
     this.setState({
-       currentPlayer: 0,
-       playersInfo: playersInfo,
-       playerResults: playerResults,
-       isOpenAllClear: false
+      currentPlayer: 0,
+      playersInfo: playersInfo,
+      playerResults: playerResults,
+      isOpenAllClear: false
     });
     store.set("currentPlayer", 0);
     store.set("playersInfo", playersInfo);
@@ -206,13 +206,13 @@ class CalcGames extends React.Component {
 
   onClickOkNewGame = () => {
     let playersInfo = this.state.playersInfo.map(pinfo => {
-      return { 
-        id : pinfo.id,
-        name : pinfo.name,
-        color : pinfo.color,
-        order : null,
-      }
-    })
+      return {
+        id: pinfo.id,
+        name: pinfo.name,
+        color: pinfo.color,
+        order: null
+      };
+    });
     const playerResults = getDefaultPlayerReults();
     this.setState({
       playerResults: playerResults,
@@ -229,7 +229,7 @@ class CalcGames extends React.Component {
 
   onChangeName = (event, index) => {
     let playersInfo = this.state.playersInfo.slice();
-    playersInfo[index].name = event.target.value.substr(0,10);
+    playersInfo[index].name = event.target.value.substr(0, 10);
     this.setState(playersInfo);
     store.set("playersInfo", playersInfo);
   };
@@ -241,7 +241,7 @@ class CalcGames extends React.Component {
     store.set("playersInfo", playersInfo);
   };
 
-  componentDidMount()  {
+  componentDidMount() {
     this.forcedScrollBonus();
   }
 
@@ -249,22 +249,24 @@ class CalcGames extends React.Component {
   forcedScrollBonus() {
     rsScroller.scrollToTop();
     setTimeout(() => {
-      let playerResults = this.state.playerResults; 
-      playerResults.forEach( result => {
-        if( result.category["Bonus"].value === 14 && result.category["Bonus"].score === 0 )
-        {
+      let playerResults = this.state.playerResults;
+      playerResults.forEach(result => {
+        if (
+          result.category["Bonus"].value === 14 &&
+          result.category["Bonus"].score === 0
+        ) {
           result.category["Bonus"].value = 10;
         }
       });
       this.setState(playerResults);
-    }, 1000)
+    }, 1000);
   }
 
   render() {
     const { classes } = this.props;
     const { playerResults } = this.state;
     const open = Boolean(this.state.anchorEl);
-    const currentResult  = this.state.playerResults[this.state.currentPlayer];
+    const currentResult = this.state.playerResults[this.state.currentPlayer];
 
     return (
       <React.Fragment>
@@ -295,7 +297,13 @@ class CalcGames extends React.Component {
             >
               <MenuItem onClick={this.onClickSetup}>Set up</MenuItem>
               <MenuItem onClick={this.onClickAllClear}>AllClear</MenuItem>
-              <MenuItem onClick={() => this.setState({ isOpenAbout: true, anchorEl: null })}>About</MenuItem>
+              <MenuItem
+                onClick={() =>
+                  this.setState({ isOpenAbout: true, anchorEl: null })
+                }
+              >
+                About
+              </MenuItem>
             </Menu>
             <Tabs
               value={this.state.currentPlayer}
@@ -305,10 +313,20 @@ class CalcGames extends React.Component {
               fullWidth
             >
               {[0, 1, 2, 3, 4].map(value => (
-                <Tab label={Orders[value]} style={{ minWidth: "20%", backgroundColor: playerResults[value].id !== -1 ? this.state.playersInfo[playerResults[value].id].color.sub : ""}} />
+                <Tab
+                  label={Orders[value]}
+                  style={{
+                    minWidth: "20%",
+                    backgroundColor:
+                      playerResults[value].id !== -1
+                        ? this.state.playersInfo[playerResults[value].id].color
+                            .sub
+                        : ""
+                  }}
+                />
               ))}
             </Tabs>
-               <div className={classes.flex}/>
+            <div className={classes.flex} />
             <Button
               onClick={this.onClickResult}
               color="inherit"
@@ -317,11 +335,15 @@ class CalcGames extends React.Component {
             >
               Result
             </Button>
-
-  
-            </Toolbar>
+          </Toolbar>
         </AppBar>
-        <TabContainer color={currentResult.id !== -1 ? this.state.playersInfo[currentResult.id].color.sub : ""}>
+        <TabContainer
+          color={
+            currentResult.id !== -1
+              ? this.state.playersInfo[currentResult.id].color.sub
+              : ""
+          }
+        >
           <CalcCore
             playerResult={currentResult}
             onChangeBtn={this.onChangeBtn}
@@ -336,14 +358,22 @@ class CalcGames extends React.Component {
           onClose={this.onCloseResult}
           results={playerResults.map((result, index) => {
             return {
-              name: result.id !== -1 ? this.state.playersInfo[result.id].name : null,
+              name:
+                result.id !== -1
+                  ? this.state.playersInfo[result.id].name
+                  : null,
               score: result.score,
-              order: result.id !== -1 ? this.state.playersInfo[result.id].order : null,
-              color: result.id !== -1 ? this.state.playersInfo[result.id].color.sub : "Red",
-
+              order:
+                result.id !== -1
+                  ? this.state.playersInfo[result.id].order
+                  : null,
+              color:
+                result.id !== -1
+                  ? this.state.playersInfo[result.id].color.sub
+                  : "Red"
             };
           })}
-         onClickOkNewGame={this.onClickOkNewGame}
+          onClickOkNewGame={this.onClickOkNewGame}
         />
         <Setup
           isOpen={this.state.isOpenSetup}
@@ -361,7 +391,9 @@ class CalcGames extends React.Component {
           すべてのページをリセットしますか？
         </AlertDialog>
         <AboutDialog
-          onClose={() => { this.setState({isOpenAbout:false})}}
+          onClose={() => {
+            this.setState({ isOpenAbout: false });
+          }}
           isOpen={this.state.isOpenAbout}
         />
       </React.Fragment>
@@ -374,10 +406,12 @@ class CalcGames extends React.Component {
       sum += playerResult.category[key].score;
     }
     playerResult.score.total = sum;
-    playerResult.score.outside = playerResult.category["Improvement"].score + playerResult.category["Bonus"].score;
-    playerResult.score.inFarm = playerResult.score.total - playerResult.score.outside;
+    playerResult.score.outside =
+      playerResult.category["Improvement"].score +
+      playerResult.category["Bonus"].score;
+    playerResult.score.inFarm =
+      playerResult.score.total - playerResult.score.outside;
   }
-
 }
 
 export default withStyles(styles)(CalcGames);
