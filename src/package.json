@@ -1,0 +1,17 @@
+{
+  "title": "Agricola Marks",
+  "description": "Agricola Score Caliculator",
+  "dependencies": {
+    "@material-ui/core": "latest",
+    "@material-ui/icons": "3.0.1",
+    "prop-types": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-smooth-scroller": "1.2.0",
+    "store": "2.0.12"
+  },
+  "name": "agricola-marks",
+  "version": "0.0.42",
+  "homepage": "./",
+  "keywords": []
+}
