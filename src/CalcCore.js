@@ -73,7 +73,7 @@ class CalcPlayer extends React.Component {
         btn2={btn2}
         btn3={btn3}
         btn4={btn4}
-        disabled={this.props.playerResult.id == -1}
+        disabled={this.props.playerResult.id === -1}
       />
     );
   }
@@ -90,16 +90,16 @@ class CalcPlayer extends React.Component {
         }
         beginIndex={beginIndex}
         endIndex={endIndex}
-        disabled={this.props.playerResult.id == -1}
+        disabled={this.props.playerResult.id === -1}
       />
     );
   }
 
   getHelperText(playerNum) {
-    if (playerNum == 0) {
+    if (playerNum === 0) {
       return "Please set up from the menu in the upper left";
     }
-    if (this.props.playerResult.id == -1) {
+    if (this.props.playerResult.id === -1) {
       return "Please Select Player";
     }
     return "";
@@ -110,7 +110,7 @@ class CalcPlayer extends React.Component {
     const { category } = this.props.playerResult;
     let playersInfo = this.props.playersInfo.filter((value, index) => {
       return (
-        value.name != null &&
+        value.name !== null &&
         (value.order === null || value.id === this.props.playerResult.id)
       );
     });
@@ -126,7 +126,7 @@ class CalcPlayer extends React.Component {
             margin="normal"
             variant="outlined"
             helperText={this.getHelperText(Object.keys(playersInfo).length)}
-            error={this.props.playerResult.id == -1}
+            error={this.props.playerResult.id === -1}
             fullWidth
           >
             {playersInfo.map((value, index) => (
@@ -170,7 +170,7 @@ class CalcPlayer extends React.Component {
                     value={value}
                     control={<Radio />}
                     label={value}
-                    disabled={this.props.playerResult.id == -1}
+                    disabled={this.props.playerResult.id === -1}
                     labelPlacement="bottom"
                   />
                 ))}

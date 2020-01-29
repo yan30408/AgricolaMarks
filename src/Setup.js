@@ -40,7 +40,7 @@ const styles = theme => ({
 });
 
 const ITEM_HEIGHT = 48;
-let RecentPlayers = store.get("RecentPlayers") || new Array();
+let RecentPlayers = store.get("RecentPlayers") || [];
 
 function Transition(props) {
   return <Slide direction="down" {...props} />;

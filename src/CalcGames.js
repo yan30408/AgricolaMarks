@@ -119,7 +119,7 @@ class CalcGames extends React.Component {
     let playerResults = this.state.playerResults;
     const { category } = playerResults[this.state.currentPlayer];
     category[id].value = value;
-    category[id].score = value == 0 ? -1 : value;
+    category[id].score = value === 0 ? -1 : value;
     this.calcScores(playerResults[this.state.currentPlayer]);
     this.setState({ playerResults: playerResults });
     store.set("playerResults", playerResults);
@@ -230,14 +230,14 @@ class CalcGames extends React.Component {
   onChangeName = (event, index) => {
     let playersInfo = this.state.playersInfo.slice();
     playersInfo[index].name = event.target.value.substr(0,10);
-    this.setState(playersInfo: playersInfo);
+    this.setState(playersInfo);
     store.set("playersInfo", playersInfo);
   };
 
   onChangeColor = (event, index) => {
     let playersInfo = this.state.playersInfo.slice();
     playersInfo[index].color = event.target.value;
-    this.setState(playersInfo: playersInfo);
+    this.setState(playersInfo);
     store.set("playersInfo", playersInfo);
   };
 
@@ -256,7 +256,7 @@ class CalcGames extends React.Component {
           result.category["Bonus"].value = 10;
         }
       });
-      this.setState(playerResults: playerResults);
+      this.setState(playerResults);
     }, 1000)
   }
 
@@ -305,7 +305,7 @@ class CalcGames extends React.Component {
               fullWidth
             >
               {[0, 1, 2, 3, 4].map(value => (
-                <Tab label={Orders[value]} style={{ minWidth: "20%", backgroundColor: playerResults[value].id != -1 ? this.state.playersInfo[playerResults[value].id].color.sub : ""}} />
+                <Tab label={Orders[value]} style={{ minWidth: "20%", backgroundColor: playerResults[value].id !== -1 ? this.state.playersInfo[playerResults[value].id].color.sub : ""}} />
               ))}
             </Tabs>
                <div className={classes.flex}/>
@@ -321,7 +321,7 @@ class CalcGames extends React.Component {
   
             </Toolbar>
         </AppBar>
-        <TabContainer color={currentResult.id != -1 ? this.state.playersInfo[currentResult.id].color.sub : ""}>
+        <TabContainer color={currentResult.id !== -1 ? this.state.playersInfo[currentResult.id].color.sub : ""}>
           <CalcCore
             playerResult={currentResult}
             onChangeBtn={this.onChangeBtn}
@@ -336,10 +336,10 @@ class CalcGames extends React.Component {
           onClose={this.onCloseResult}
           results={playerResults.map((result, index) => {
             return {
-              name: result.id != -1 ? this.state.playersInfo[result.id].name : null,
+              name: result.id !== -1 ? this.state.playersInfo[result.id].name : null,
               score: result.score,
-              order: result.id != -1 ? this.state.playersInfo[result.id].order : null,
-              color: result.id != -1 ? this.state.playersInfo[result.id].color.sub : "Red",
+              order: result.id !== -1 ? this.state.playersInfo[result.id].order : null,
+              color: result.id !== -1 ? this.state.playersInfo[result.id].color.sub : "Red",
 
             };
           })}
