@@ -26,38 +26,22 @@ const styles = {
 };
 
 const imageUrl = {
-  Fields:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/7qda-Fields.png",
-  Pastures:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/tT1E-Fence.png",
-  Grain:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/-HbW-Grain.png",
-  Vegetables:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/J-M0-Vege.png",
-  Sheep:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/y_tW-Sheep.png",
-  "Wild boar":
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/zvjv-Boar.png",
-  Cattle:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/XmUo-Cattle.png",
-  "Unused Spaces":
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/HKJ9-Space.png",
-  Stable:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/XIMf-Stable.png",
-  Rooms_Wood:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/ehx--Room_Wood.png",
-  Rooms_Clay:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/IH1K-Room_Clay.png",
-  Rooms_Stone:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/nl26-Room_Stone.png",
-  Family:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/1O4_-Family.png",
-  Beggar:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/TRwp-Beggar.png",
-  Improvement:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/XSyE-Improvement.png",
-  Bonus:
-    "https://uploads.codesandbox.io/uploads/user/42f1ba5d-a9d8-4e15-8204-739a96ca5333/ODvF-Bonus.png"
+  Fields: "/images/Fields.png",
+  Pastures: "/images/Fence.png",
+  Grain: "/images/Grain.png",
+  Vegetables: "/images/Vege.png",
+  Sheep: "/images/Sheep.png",
+  "Wild boar": "/images/Boar.png",
+  Cattle: "/images/Cattle.png",
+  "Unused Spaces": "/images/Space.png",
+  Stable: "/images/Stable.png",
+  Rooms_Wood: "/images/Room_Wood.png",
+  Rooms_Clay: "/images/Room_Clay.png",
+  Rooms_Stone: "/images/Room_Stone.png",
+  Family: "/images/Family.png",
+  Beggar: "/images/Beggar.png",
+  Improvement: "/images/Improvement.png",
+  Bonus: "/images/Bonus.png"
 };
 
 class CalcPlayer extends React.Component {
