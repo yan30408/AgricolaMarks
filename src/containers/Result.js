@@ -18,7 +18,7 @@ import {
 import CloseIcon from "@material-ui/icons/Close";
 import RestartIcon from "@material-ui/icons/Refresh";
 
-import AlertDialog from "./AlertDialog";
+import AlertDialog from "../components/AlertDialog";
 
 const styles = theme => ({
   appBar: {

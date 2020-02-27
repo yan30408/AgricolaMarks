@@ -20,7 +20,7 @@ import {
 import CloseIcon from "@material-ui/icons/Close";
 import PlayersIcon from "@material-ui/icons/FolderShared";
 
-import { Colors } from "./Constants";
+import { Colors } from "../Constants";
 
 const styles = theme => ({
   appBar: {

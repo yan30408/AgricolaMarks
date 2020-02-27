@@ -1,5 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import CalcGames from "./CalcGames";
+import App from "./containers/App";
 
-ReactDOM.render(<CalcGames />, document.querySelector("#root"));
+ReactDOM.render(<App />, document.querySelector("#root"));

@@ -16,12 +16,12 @@ import {
 
 import MenuIcon from "@material-ui/icons/Menu";
 
-import CalcCore from "./CalcCore";
+import CalcForm from "./CalcForm";
 import Result from "./Result";
 import Setup from "./Setup";
-import AlertDialog from "./AlertDialog";
+import AlertDialog from "../components/AlertDialog";
 import AboutDialog from "./AboutDialog";
-import { ScoreByRoomType, Orders, Colors } from "./Constants";
+import { ScoreByRoomType, Orders, Colors } from "../Constants";
 import rsScroller from "react-smooth-scroller";
 
 function TabContainer(props) {
@@ -348,7 +348,7 @@ class CalcGames extends React.Component {
               : ""
           }
         >
-          <CalcCore
+          <CalcForm
             playerResult={currentResult}
             onChangeBtn={this.onChangeBtn}
             onChange5btn={this.onChange5btn}
