@@ -1,4 +1,7 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import store from "stores/interfaces";
+
 import { withStyles } from "@material-ui/core/styles";
 import {
   AppBar,
@@ -11,21 +14,9 @@ import {
   DialogTitle,
   Slide
 } from "@material-ui/core";
-
 import CloseIcon from "@material-ui/icons/Close";
-import ChangeLog from "./ChangeLog";
 
-const styles = theme => ({
-  appBar: {
-    position: "relative"
-  },
-  flex: {
-    flex: 1
-  },
-  historyList: {
-    paddingLeft: theme.spacing.unit * 3
-  }
-});
+import ChangeLog from "./ChangeLog";
 
 function Transition(props) {
   return <Slide direction="down" {...props} />;
@@ -60,20 +51,23 @@ const AboutDialog = props => {
   const { classes } = props;
   const version = process.env.REACT_APP_VERSION;
 
+  const d = useDispatch();
+  const isOpen = useSelector(state => store.getAppState(state, "isOpenAbout"));
+
+  const onClose = useCallback(() => {
+    d(
+      store.appStateMutate(state => {
+        state.isOpenAbout = false;
+      })
+    );
+  }, []);
+  console.log(isOpen);
   return (
     <div>
-      <Dialog
-        open={props.isOpen}
-        onClose={props.onClose}
-        TransitionComponent={Transition}
-      >
+      <Dialog open={isOpen} onClose={onClose} TransitionComponent={Transition}>
         <AppBar className={classes.appBar}>
           <Toolbar>
-            <IconButton
-              color="inherit"
-              onClick={props.onClose}
-              aria-label="Close"
-            >
+            <IconButton color="inherit" onClick={onClose} aria-label="Close">
               <CloseIcon />
             </IconButton>
             <Typography variant="h6" color="inherit" className={classes.flex}>
@@ -109,5 +103,17 @@ const AboutDialog = props => {
     </div>
   );
 };
+
+const styles = theme => ({
+  appBar: {
+    position: "relative"
+  },
+  flex: {
+    flex: 1
+  },
+  historyList: {
+    paddingLeft: theme.spacing.unit * 3
+  }
+});
 
 export default withStyles(styles)(AboutDialog);
