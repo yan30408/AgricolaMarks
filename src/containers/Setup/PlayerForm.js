@@ -1,71 +1,64 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { memo, useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { withStyles } from "@material-ui/core/styles";
-import {
-  IconButton,
-  TextField,
-  Menu,
-  MenuItem,
-  InputAdornment
-} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { IconButton, TextField, Menu, InputAdornment } from "@material-ui/core";
 import PlayersIcon from "@material-ui/icons/FolderShared";
 
+import RecentPlayerListItem from "./RecentPlayerListItem";
+
+const useStyles = makeStyles(theme => ({
+  textField: {
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1)
+  }
+}));
+
 const PlayerForm = props => {
-  const { classes, index } = props;
+  const { index } = props;
+  const classes = useStyles();
   const ITEM_HEIGHT = 48;
   const anchorEl = useRef(null);
   const [open, setOpen] = useState(false);
   const [playerIndex, setPlayerIndex] = useState(0);
   const d = useDispatch();
 
-  const name = useSelector(state => store.getAppCurrentPlayers(state, index));
+  const name = useSelector(state => store.getAppCurrentPlayer(state, index))
+    ?.name;
   const recentPlayers = useSelector(state => store.getAppRecentPlayers(state));
-
-  const onChangeName = useCallback((event, index) => {
-    d(
-      store.appPlayersMutate(players => {
-        players.current[index].name = event.target.value.substr(0, 10);
-      })
-    );
-  }, []);
-  const onShowRecentPlayers = useCallback(
-    index => {
-      if (recentPlayers.length > 0) {
-        setPlayerIndex(index);
-        setOpen(true);
-      }
-    },
-    [recentPlayers.length]
-  );
-  const onHideRecentPlayers = useCallback(() => {
-    setOpen(false);
-  }, []);
-  const onChoseRecentPlayer = useCallback(
-    index => {
-      setOpen(false);
+  const onChangeName = useCallback(
+    event => {
       d(
         store.appPlayersMutate(players => {
-          players.current[playerIndex].name = recentPlayers[index];
+          players.current[index].name = event.target.value.substr(0, 10);
         })
       );
     },
-    [playerIndex, recentPlayers]
+    [d, index]
   );
+  const onShowRecentPlayers = useCallback(() => {
+    if (recentPlayers.length > 0) {
+      setPlayerIndex(index);
+      setOpen(true);
+    }
+  }, [index, recentPlayers.length]);
+  const onHideRecentPlayers = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   return (
     <TextField
-      id="outlined-name"
       label="Name"
       className={classes.textField}
       value={name}
-      onChange={event => onChangeName(event, index)}
+      onChange={onChangeName}
       margin="normal"
       variant="outlined"
+      fullWidth
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">
-            <IconButton ref={anchorEl} onClick={onShowRecentPlayers(index)}>
+            <IconButton ref={anchorEl} onClick={onShowRecentPlayers}>
               <PlayersIcon />
             </IconButton>
             <Menu
@@ -80,9 +73,12 @@ const PlayerForm = props => {
               }}
             >
               {recentPlayers.map((name, rpIndex) => (
-                <MenuItem key={name} onClick={onChoseRecentPlayer(rpIndex)}>
-                  {name}
-                </MenuItem>
+                <RecentPlayerListItem
+                  key={rpIndex}
+                  name={name}
+                  playerIndex={playerIndex}
+                  onClose={onHideRecentPlayers}
+                />
               ))}
             </Menu>
           </InputAdornment>
@@ -92,24 +88,4 @@ const PlayerForm = props => {
   );
 };
 
-const styles = theme => ({
-  appBar: {
-    position: "relative"
-  },
-  flex: {
-    flex: 1
-  },
-  container: {
-    display: "flex",
-    flexWrap: "wrap",
-    padding: "60px 0px"
-  },
-  textField: {
-    marginLeft: theme.spacing.unit,
-    marginRight: theme.spacing.unit
-  },
-  menu: {
-    width: 50
-  }
-});
-export default withStyles(styles)(PlayerForm);
+export default memo(PlayerForm);

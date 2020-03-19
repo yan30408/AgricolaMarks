@@ -1,8 +1,8 @@
-import React, { useCallback } from "react";
+import React, { memo, useCallback, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { uniq } from "lodash";
-import { withStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import {
   IconButton,
   List,
@@ -17,90 +17,79 @@ import {
 import CloseIcon from "@material-ui/icons/Close";
 
 import PlayerForm from "./PlayerForm";
+import { Colors } from "Constants";
 
-function Transition(props) {
-  return <Slide direction="down" {...props} />;
-}
+const Transition = forwardRef((props, ref) => {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
+
+const useStyles = makeStyles({
+  appBar: {
+    position: "relative"
+  },
+  flex: {
+    flex: 1
+  }
+});
 
 const FullScreenDialog = props => {
-  const { classes } = props;
+  const classes = useStyles();
   const d = useDispatch();
   const isOpen = useSelector(state => store.getAppState(state, "isOpenSetup"));
   const recentPlayers = useSelector(state => store.getAppRecentPlayers(state));
   const validPlayers = useSelector(state => store.getValidPlayers(state));
   const onClose = useCallback(() => {
     // とりえあず最大20件
-    const recPlayers = uniq([...validPlayers, ...recentPlayers]).slice(0, 20);
+    const playerNames = validPlayers.map(player => player.name);
+    const recPlayers = uniq([...playerNames, ...recentPlayers]).slice(0, 20);
     d(
-      store.actions.appStateMutate(state => {
+      store.appPlayersMutate(players => {
+        players.recent = recPlayers;
+      })
+    );
+    d(
+      store.appStateMutate(state => {
         state.isOpenSetup = false;
       })
     );
-    d(
-      store.appPlayersMutate(state => {
-        state.recent = recPlayers;
-      })
-    );
-  }, [validPlayers, recentPlayers]);
+  }, [d, validPlayers, recentPlayers]);
 
   return (
-    <div>
-      <Dialog
-        fullScreen
-        open={isOpen}
-        onClose={onClose}
-        TransitionComponent={Transition}
-      >
-        <AppBar className={classes.appBar}>
-          <Toolbar>
-            <IconButton color="inherit" onClick={onClose} aria-label="Close">
-              <CloseIcon />
-            </IconButton>
-            <Typography variant="h6" color="inherit" className={classes.flex}>
-              Setup Player Info
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <List>
-          {[0, 1, 2, 3, 4].map(index => (
+    <Dialog
+      fullScreen
+      open={isOpen}
+      onClose={onClose}
+      TransitionComponent={Transition}
+    >
+      <AppBar className={classes.appBar}>
+        <Toolbar>
+          <IconButton color="inherit" onClick={onClose} aria-label="Close">
+            <CloseIcon />
+          </IconButton>
+          <Typography variant="h6" color="inherit" className={classes.flex}>
+            Setup Player Info
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <List>
+        {Array(5)
+          .fill(0)
+          .map((_, index) => (
             <div
               key={index}
-              style={
-                {
-                  // backgroundColor: this.props.playersInfo[index].color.sub
-                }
-              }
+              style={{
+                backgroundColor: Colors[Object.keys(Colors)[index]].sub
+              }}
             >
-              <ListItem Item>
-                <PlayerForm index={index} />>
+              <ListItem>
+                <PlayerForm index={index} />
               </ListItem>
               <Divider />
             </div>
           ))}
-        </List>
-      </Dialog>
-    </div>
+      </List>
+    </Dialog>
   );
 };
 
-const styles = theme => ({
-  appBar: {
-    position: "relative"
-  },
-  flex: {
-    flex: 1
-  },
-  container: {
-    display: "flex",
-    flexWrap: "wrap",
-    padding: "60px 0px"
-  },
-  textField: {
-    marginLeft: theme.spacing.unit,
-    marginRight: theme.spacing.unit
-  },
-  menu: {
-    width: 50
-  }
-});
-export default withStyles(styles)(FullScreenDialog);
+export default memo(FullScreenDialog);

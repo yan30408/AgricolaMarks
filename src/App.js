@@ -1,6 +1,6 @@
 import React from "react";
 import { Provider } from "react-redux";
-import { store, history, persistor } from "./stores";
+import { store } from "./stores";
 
 import Home from "containers/Home";
 

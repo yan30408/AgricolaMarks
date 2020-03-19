@@ -1,11 +1,11 @@
-import { createStore, combineReducers, applyMiddleware, compose } from "redux";
+import { createStore, combineReducers } from "redux";
 // import thunk from "redux-thunk";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
 // app
 import state from "./modules/app.state";
-import result from "./modules/app.result";
+import results from "./modules/app.results";
 import players from "./modules/app.players";
 
 // entities
@@ -13,24 +13,24 @@ import players from "./modules/app.players";
 const appStatePersistConfig = {
   key: "store.app.state",
   storage,
-  whitelist: ["currentPlayer", "isOpenResult", "isOpenSetup"]
+  whitelist: ["currentPlayerId", "currentOrder", "isOpenResult", "isOpenSetup"]
 };
 
-const appResultPersistConfig = {
-  key: "store.app.result",
+const appResultsPersistConfig = {
+  key: "store.app.results",
   storage
 };
 
-const appPlayerPersistConfig = {
-  key: "store.app.player",
+const appPlayersPersistConfig = {
+  key: "store.app.players",
   storage
 };
 
 const rootReducer = combineReducers({
   app: combineReducers({
     state: persistReducer(appStatePersistConfig, state),
-    result: persistReducer(appResultPersistConfig, result),
-    players: persistReducer(appPlayerPersistConfig, players)
+    results: persistReducer(appResultsPersistConfig, results),
+    players: persistReducer(appPlayersPersistConfig, players)
   })
   //   entities: combineReducers({
   //     rooms,
@@ -51,7 +51,10 @@ const rootReducer = combineReducers({
 });
 
 // export const store = createStore(rootReducer, applyMiddleware(thunk));
-export const store = createStore(rootReducer);
+export const store = createStore(
+  rootReducer,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
 export const persistor = persistStore(store);
 
 // window._s = store;

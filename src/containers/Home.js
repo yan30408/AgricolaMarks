@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { withStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import {
   Button,
   IconButton,
@@ -11,83 +12,67 @@ import {
   AppBar,
   Typography,
   MenuItem,
-  Menu
+  Menu,
+  Paper
 } from "@material-ui/core";
 
 import MenuIcon from "@material-ui/icons/Menu";
 
-//import CalcForm from "./CalcForm";
+import CalcForm from "./CalcForm";
 import Result from "./Result";
 import Setup from "./Setup";
 import AboutDialog from "./AboutDialog";
 import AlertDialog from "components/AlertDialog";
-import { ScoreByRoomType, Orders, Colors } from "../Constants";
-import rsScroller from "react-smooth-scroller";
-import { useDispatch } from "react-redux";
+import { Orders } from "Constants";
 
-function TabContainer(props) {
-  return (
-    <Typography
-      component="div"
-      style={{ padding: "50px 10px", backgroundColor: props.color }}
-    >
-      {props.children}
-    </Typography>
-  );
-}
+const useStyles = makeStyles({
+  flex: {
+    flex: 1
+  }
+});
 
 const Home = props => {
-  const { classes } = props;
+  const classes = useStyles();
   const d = useDispatch();
   const anchorEl = useRef(null);
   const [openMenu, setOpenMenu] = useState(false);
   const [openAllClear, setOpenAllClear] = useState(false);
+  const order = useSelector(state => store.getAppState(state, "currentOrder"));
+  const players = useSelector(state => store.getValidPlayers(state));
+  const result = useSelector(state => store.getAppResultByIndex(state, order));
 
-  const onChangeCurrentPlayer = useCallback((_, value) => {
-    rsScroller.scrollToTop({ duration: 500 });
-    d(
-      store.actions.appStateMutate(state => {
-        state.currentPlayer = value;
-      })
-    );
-  }, []);
-
+  const onChangeOrder = useCallback(
+    (_, value) => {
+      const player = players.find(player => player.order === value);
+      d(
+        store.appStateMutate(state => {
+          state.currentOrder = value;
+          state.currentPlayerId = player ? player.id : -1;
+        })
+      );
+    },
+    [d, players]
+  );
   const onClickMenu = useCallback(() => {
     setOpenMenu(true);
   }, []);
   const onCloseMenu = useCallback(() => {
     setOpenMenu(false);
   }, []);
-
-  // onChangePlayer = event => {
-  //   let playerResults = this.state.playerResults;
-  //   let playersInfo = this.state.playersInfo;
-  //   if (playerResults[this.state.currentPlayer].id !== -1) {
-  //     playersInfo[playerResults[this.state.currentPlayer].id].order = null;
-  //   }
-  //   playerResults[this.state.currentPlayer].id = event.target.value;
-  //   if (event.target.value !== -1) {
-  //     playersInfo[event.target.value].order = Orders[this.state.currentPlayer];
-  //   }
-  //   this.setState({ playerResults: playerResults, playersInfo: playersInfo });
-  //   store.set("playerResults", playerResults);
-  //   store.set("playersInfo", playersInfo);
-  // };
-
   const onClickResult = useCallback(() => {
     d(
       store.appStateMutate(state => {
         state.isOpenResult = true;
       })
     );
-  }, []);
+  }, [d]);
   const onClickAbout = useCallback(() => {
     d(
       store.appStateMutate(state => {
         state.isOpenAbout = true;
       })
     );
-  }, []);
+  }, [d]);
   const onClickSetup = useCallback(() => {
     setOpenMenu(false);
     d(
@@ -95,7 +80,7 @@ const Home = props => {
         state.isOpenSetup = true;
       })
     );
-  }, []);
+  }, [d]);
   const onClickAllClear = useCallback(() => {
     setOpenMenu(false);
     setOpenAllClear(true);
@@ -107,42 +92,19 @@ const Home = props => {
     setOpenAllClear(false);
     d(
       store.appStateMutate(state => {
-        state.currentPlayer = 0;
+        state.currentPlayerId = -1;
+        state.currentOrder = 0;
       })
     );
-    // store.set("playersInfo", playersInfo);
-    // store.set("playerResults", playerResults);
-    //    this.forcedScrollBonus();
-  }, []);
+    d(store.appPlayersInit);
+    d(store.appResultsInit);
+  }, [d]);
 
-  // useEffect( () =>{}
-  //   this.forcedScrollBonus();
-  // });
-
-  // // ボーナスの表示だけ左合わせにできなかったのでウンチみたいな処理
-  // forcedScrollBonus() {
-  //   rsScroller.scrollToTop();
-  //   setTimeout(() => {
-  //     let playerResults = this.state.playerResults;
-  //     playerResults.forEach(result => {
-  //       if (
-  //         result.category["Bonus"].value === 14 &&
-  //         result.category["Bonus"].score === 0
-  //       ) {
-  //         result.category["Bonus"].value = 10;
-  //       }
-  //     });
-  //     this.setState(playerResults);
-  //   }, 1000);
-  // }
-
-  // const { playerResults } = this.state;
-  // const currentResult = this.state.playerResults[this.state.currentPlayer];
   return (
     <React.Fragment>
       <CssBaseline />
       <AppBar position="fixed" color="default">
-        <Toolbar className={classes.flex}>
+        <Toolbar>
           <IconButton ref={anchorEl} onClick={onClickMenu} color="inherit">
             <MenuIcon />
           </IconButton>
@@ -164,27 +126,28 @@ const Home = props => {
             <MenuItem onClick={onClickAllClear}>AllClear</MenuItem>
             <MenuItem onClick={onClickAbout}>About</MenuItem>
           </Menu>
-          {/* <Tabs
-              value={this.state.currentPlayer}
-              onChange={onChangeCurrentPlayer}
-              indicatorColor="primary"
-              textColor="primary"
-              fullWidth
-            >
-              {[0, 1, 2, 3, 4].map(value => (
+          <Tabs
+            value={order}
+            onChange={onChangeOrder}
+            indicatorColor="primary"
+            textColor="primary"
+            variant="fullWidth"
+          >
+            {[0, 1, 2, 3, 4].map(value => {
+              const player = players.find(player => player.order === value);
+              const color = player ? player.color.sub : "";
+              return (
                 <Tab
+                  key={Orders[value]}
                   label={Orders[value]}
                   style={{
                     minWidth: "20%",
-                    // backgroundColor:
-                    //   playerResults[value].id !== -1
-                    //     ? this.state.playersInfo[playerResults[value].id].color
-                    //         .sub
-                    //     : ""
+                    backgroundColor: color
                   }}
                 />
-              ))}
-            </Tabs> */}
+              );
+            })}
+          </Tabs>
           <div className={classes.flex} />
           <Button
             onClick={onClickResult}
@@ -196,22 +159,14 @@ const Home = props => {
           </Button>
         </Toolbar>
       </AppBar>
-      {/* <TabContainer
-          color={
-            currentResult.id !== -1
-              ? this.state.playersInfo[currentResult.id].color.sub
-              : ""
-          }
-        >
-          <CalcForm
-            playerResult={currentResult}
-            onChangeBtn={this.onChangeBtn}
-            onChange5btn={this.onChange5btn}
-            onChangeRoomType={this.onChangeRoomType}
-            playersInfo={this.state.playersInfo}
-            onChangePlayer={this.onChangePlayer}
-          />
-        </TabContainer> */}
+      <CalcForm />
+      <Paper
+        style={{ position: "fixed", top: "auto", bottom: 0, width: "100%" }}
+      >
+        <Typography variant="h5" color="inherit" align="center">
+          Score : {result.score.total}
+        </Typography>
+      </Paper>
       <Result />
       <Setup />
       <AlertDialog
@@ -227,13 +182,4 @@ const Home = props => {
   );
 };
 
-const styles = {
-  root: {
-    flexGrow: 1,
-    backgroundColor: "Blue"
-  },
-  flex: {
-    flex: 1
-  }
-};
-export default withStyles(styles)(Home);
+export default Home;
