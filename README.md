@@ -1,6 +1,6 @@
 # Agricola Marks
 
-Agricola Score Caliculator
+Agricola Score Calculator
 
 © 2018 yan3 - Spiel Embryo
 
