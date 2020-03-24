@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
@@ -11,19 +11,19 @@ import {
   CssBaseline,
   AppBar,
   Typography,
-  MenuItem,
-  Menu,
   Paper
 } from "@material-ui/core";
 
 import MenuIcon from "@material-ui/icons/Menu";
 
-import CalcForm from "./CalcForm";
-import Result from "./Result";
-import Setup from "./Setup";
-import AboutDialog from "./AboutDialog";
+import CalcForm from "containers/CalcForm";
+import Result from "containers/Result";
+import Setup from "containers/Setup";
+import AboutDialog from "containers/AboutDialog";
 import AlertDialog from "components/AlertDialog";
 import { Orders } from "Constants";
+
+import MainMenu from "./MainMenu";
 
 const useStyles = makeStyles({
   flex: {
@@ -34,9 +34,9 @@ const useStyles = makeStyles({
 const Home = props => {
   const classes = useStyles();
   const d = useDispatch();
-  const anchorEl = useRef(null);
-  const [openMenu, setOpenMenu] = useState(false);
-  const [openAllClear, setOpenAllClear] = useState(false);
+  const openAllClear = useSelector(state =>
+    store.getAppState(state, "isOpenAllClear")
+  );
   const order = useSelector(state => store.getAppState(state, "currentOrder"));
   const players = useSelector(state => store.getValidPlayers(state));
   const result = useSelector(state => store.getAppResultByIndex(state, order));
@@ -54,11 +54,12 @@ const Home = props => {
     [d, players]
   );
   const onClickMenu = useCallback(() => {
-    setOpenMenu(true);
-  }, []);
-  const onCloseMenu = useCallback(() => {
-    setOpenMenu(false);
-  }, []);
+    d(
+      store.appStateMutate(state => {
+        state.isOpenMenu = true;
+      })
+    );
+  }, [d]);
   const onClickResult = useCallback(() => {
     d(
       store.appStateMutate(state => {
@@ -66,38 +67,27 @@ const Home = props => {
       })
     );
   }, [d]);
-  const onClickAbout = useCallback(() => {
-    d(
-      store.appStateMutate(state => {
-        state.isOpenAbout = true;
-      })
-    );
-  }, [d]);
-  const onClickSetup = useCallback(() => {
-    setOpenMenu(false);
-    d(
-      store.appStateMutate(state => {
-        state.isOpenSetup = true;
-      })
-    );
-  }, [d]);
-  const onClickAllClear = useCallback(() => {
-    setOpenMenu(false);
-    setOpenAllClear(true);
-  }, []);
   const onCloseAllClear = useCallback(() => {
-    setOpenAllClear(false);
-  }, []);
+    d(
+      store.appStateMutate(state => {
+        state.isOpenAllClear = false;
+      })
+    );
+  }, [d]);
   const onClickOkAllClear = useCallback(() => {
-    setOpenAllClear(false);
     d(
       store.appStateMutate(state => {
         state.currentPlayerId = -1;
         state.currentOrder = 0;
+        state.isOpenAllClear = false;
       })
     );
     d(store.appPlayersInit);
     d(store.appResultsInit);
+  }, [d]);
+
+  useEffect(() => {
+    d(store.subscribeUserState());
   }, [d]);
 
   return (
@@ -105,27 +95,10 @@ const Home = props => {
       <CssBaseline />
       <AppBar position="fixed" color="default">
         <Toolbar>
-          <IconButton ref={anchorEl} onClick={onClickMenu} color="inherit">
+          <IconButton onClick={onClickMenu} color="inherit">
             <MenuIcon />
           </IconButton>
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl.current}
-            anchorOrigin={{
-              vertical: "top",
-              horizontal: "right"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right"
-            }}
-            open={openMenu}
-            onClose={onCloseMenu}
-          >
-            <MenuItem onClick={onClickSetup}>Set up</MenuItem>
-            <MenuItem onClick={onClickAllClear}>AllClear</MenuItem>
-            <MenuItem onClick={onClickAbout}>About</MenuItem>
-          </Menu>
+          <MainMenu />
           <Tabs
             value={order}
             onChange={onChangeOrder}

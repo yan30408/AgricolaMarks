@@ -6,11 +6,18 @@ import produce from "immer";
 const { APP_STATE_MUTATE } = types;
 
 const initialState = {
+  uid: null,
+  isAnonymous: null,
+  displayName: null,
+  photoUrl: null,
+
   currentPlayerId: -1,
   currentOrder: 0,
+  isOpenMenu: false,
   isOpenResult: false,
   isOpenSetup: false,
-  isOpenAbout: false
+  isOpenAbout: false,
+  isOpenAllClear: false
 };
 
 // Reducers
