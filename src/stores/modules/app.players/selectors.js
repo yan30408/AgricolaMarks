@@ -1,20 +1,16 @@
 import { createSelector } from "reselect";
-import { findIndex } from "lodash";
+import { filter, find } from "lodash";
 
 export const getAppPlayers = (state, key) => {
   return state.app.players[key];
 };
 
-export const getAppCurrentPlayer = (state, index) => {
-  return state.app.players.current[index];
+export const getAppCurrentPlayer = (state, colorId) => {
+  return state.app.players.current[colorId];
 };
 
-export const getAppCurrentPlayerById = (state, id) => {
-  return []; //state.app.players.current.find(player => player.id === id);
-};
-
-export const getAppCurrentPlayerIndex = (state, cid) => {
-  return findIndex(state.app.players.current, { colorId: cid });
+export const getAppCurrentPlayerById = (state, uid) => {
+  return find(state.app.players.current, player => player.uid === uid);
 };
 
 export const getAppCurrentPlayers = state => {
@@ -26,5 +22,5 @@ export const getAppRecentPlayers = state => {
 };
 
 export const getValidPlayers = createSelector(getAppCurrentPlayers, players => {
-  return []; //players.filter(player => player.name !== "");
+  return filter(players, player => player.uid !== null);
 });

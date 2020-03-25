@@ -30,7 +30,7 @@ const CalcForm = props => {
   const playerColor = useSelector(state =>
     store.getAppCurrentPlayerById(state, playerId)
   )?.color.sub;
-  const isInvalidPlayer = playerId === -1;
+  const isInvalidPlayer = !playerId;
 
   const onChangePlayer = useCallback(
     event => {
@@ -106,8 +106,8 @@ const CalcForm = props => {
             .filter(player => player.order === null || player.order === order)
             .map(player => (
               <MenuItem
-                key={player.id.toString()}
-                value={player.id}
+                key={player.uid}
+                value={player.uid}
                 style={{
                   color: player.color.main,
                   backgroundColor: player.color.sub
