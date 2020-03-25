@@ -15,7 +15,8 @@ import {
   Slide
 } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
-import RestartIcon from "@material-ui/icons/Refresh";
+import SaveIcon from "@material-ui/icons/Save";
+import DeleteIcon from "@material-ui/icons/Delete";
 
 import AlertDialog from "components/AlertDialog";
 import ResultListItem from "./ResultListItem";
@@ -103,14 +104,24 @@ const FullScreenDialog = props => {
         ))}
         <ListItem>
           <Button
-            color="inherit"
+            color="primary"
             onClick={onClickNewGame}
             fullWidth
             variant="contained"
-            className={classes.button}
           >
-            Newgame
-            <RestartIcon className={classes.rightIcon} />
+            結果を記録する
+            <SaveIcon className={classes.rightIcon} />
+          </Button>
+        </ListItem>
+        <ListItem>
+          <Button
+            color="secondary"
+            onClick={onClickNewGame}
+            fullWidth
+            variant="contained"
+          >
+            結果を破棄する
+            <DeleteIcon className={classes.rightIcon} />
           </Button>
         </ListItem>
       </List>

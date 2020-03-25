@@ -2,20 +2,17 @@ import types from "./types";
 import produce from "immer";
 //import reduceReducer from "reduce-reducers";
 //import { enableBatching } from "redux-batched-actions";
+import { mapValues } from "lodash";
 import { Colors } from "Constants";
 import resultsTypes from "../app.results/types";
 
 const initialState = {
-  current: Array(5)
-    .fill(0)
-    .map((_, index) => {
-      return {
-        id: index,
-        name: "",
-        color: Colors[Object.keys(Colors)[index]],
-        order: null
-      };
-    }),
+  current: mapValues(Colors, () => {
+    return {
+      uid: null,
+      order: null
+    };
+  }),
   recent: []
 };
 

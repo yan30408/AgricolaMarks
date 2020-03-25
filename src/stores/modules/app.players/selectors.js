@@ -1,4 +1,5 @@
 import { createSelector } from "reselect";
+import { findIndex } from "lodash";
 
 export const getAppPlayers = (state, key) => {
   return state.app.players[key];
@@ -9,7 +10,11 @@ export const getAppCurrentPlayer = (state, index) => {
 };
 
 export const getAppCurrentPlayerById = (state, id) => {
-  return state.app.players.current.find(player => player.id === id);
+  return []; //state.app.players.current.find(player => player.id === id);
+};
+
+export const getAppCurrentPlayerIndex = (state, cid) => {
+  return findIndex(state.app.players.current, { colorId: cid });
 };
 
 export const getAppCurrentPlayers = state => {
@@ -21,5 +26,5 @@ export const getAppRecentPlayers = state => {
 };
 
 export const getValidPlayers = createSelector(getAppCurrentPlayers, players => {
-  return players.filter(player => player.name !== "");
+  return []; //players.filter(player => player.name !== "");
 });

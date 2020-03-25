@@ -80,9 +80,9 @@ const Home = props => {
         state.currentPlayerId = -1;
         state.currentOrder = 0;
         state.isOpenAllClear = false;
+        state.isOpenMenu = false;
       })
     );
-    d(store.appPlayersInit);
     d(store.appResultsInit);
   }, [d]);
 
@@ -143,12 +143,12 @@ const Home = props => {
       <Result />
       <Setup />
       <AlertDialog
-        title={"Rest all pages?"}
+        title={"Reset all inputs?"}
         onClose={onCloseAllClear}
         onClickOk={onClickOkAllClear}
         isOpen={openAllClear}
       >
-        すべてのページをリセットしますか？
+        現在入力中のスコアを全てリセットしますか？
       </AlertDialog>
       <AboutDialog />
     </React.Fragment>

@@ -10,6 +10,7 @@ const initialState = {
   isAnonymous: null,
   displayName: null,
   photoUrl: null,
+  twitterId: null,
 
   currentPlayerId: -1,
   currentOrder: 0,
@@ -17,7 +18,8 @@ const initialState = {
   isOpenResult: false,
   isOpenSetup: false,
   isOpenAbout: false,
-  isOpenAllClear: false
+  isOpenAllClear: false,
+  isOpenPlayerSelect: false
 };
 
 // Reducers

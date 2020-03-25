@@ -8,8 +8,10 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
+  ListItemIcon,
   Avatar
 } from "@material-ui/core";
+import ArrowForwardIcon from "@material-ui/icons/ArrowForwardIos";
 
 const useStyles = makeStyles({
   flex: {
@@ -29,6 +31,7 @@ const MainMenu = props => {
     store.getAppState(state, "displayName")
   );
   const photoUrl = useSelector(state => store.getAppState(state, "photoUrl"));
+  const twitterId = useSelector(state => store.getAppState(state, "twitterId"));
 
   const onClose = useCallback(() => {
     d(
@@ -36,7 +39,7 @@ const MainMenu = props => {
         state.isOpenMenu = false;
       })
     );
-  }, []);
+  }, [d]);
   const onClickAbout = useCallback(() => {
     d(
       store.appStateMutate(state => {
@@ -55,14 +58,17 @@ const MainMenu = props => {
   const onClickAllClear = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        //        state.isOpenMenu = false;
         state.isOpenAllClear = true;
       })
     );
-  }, []);
+  }, [d]);
   const onClickSignin = useCallback(() => {
-    d(store.signInWithTwitter());
-  }, []);
+    if (!isAnonymous && uid) {
+      d(store.signOut());
+    } else {
+      d(store.signInWithTwitter());
+    }
+  }, [d, uid, isAnonymous]);
 
   return (
     <SwipeableDrawer
@@ -77,19 +83,27 @@ const MainMenu = props => {
           <ListItemAvatar>
             <Avatar src={photoUrl} />
           </ListItemAvatar>
-          <ListItemText primary={displayName || "匿名ユーザー"} />
+          <ListItemText
+            primary={displayName || "匿名ユーザー"}
+            secondary={twitterId || "Anonymous"}
+          />
         </ListItem>
         <ListItem button divider onClick={onClickSignin}>
-          <ListItemText primary="SIGNIN WITH TWITTER" />
+          <ListItemText
+            primary={!isAnonymous && uid ? "ログアウト" : "ログイン"}
+          />
         </ListItem>
         <ListItem button onClick={onClickSetup}>
-          <ListItemText primary="SET UP" />
+          <ListItemText primary="参加プレイヤー設定" />
+          <ListItemIcon>
+            <ArrowForwardIcon />
+          </ListItemIcon>
         </ListItem>
         <ListItem button onClick={onClickAllClear} divider>
-          <ListItemText primary="ALL CLEAR" />
+          <ListItemText primary="現在の入力を全て消す" />
         </ListItem>
         <ListItem button onClick={onClickAbout} divider>
-          <ListItemText primary="ABOUT" />
+          <ListItemText primary="このアプリについて" />
         </ListItem>
       </List>
     </SwipeableDrawer>

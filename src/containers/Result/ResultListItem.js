@@ -1,7 +1,13 @@
 import React, { memo } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { ListItem, ListItemText, Typography } from "@material-ui/core";
+import {
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Typography
+} from "@material-ui/core";
 import { Orders } from "Constants";
 
 const ResultListItem = props => {
@@ -11,11 +17,9 @@ const ResultListItem = props => {
   return (
     <div>
       <ListItem style={{ backgroundColor: player.color.sub }} divider>
-        {/*
-        <Avatar>
-          <ImageIcon />
-        </Avatar>
-        */}
+        <ListItemAvatar>
+          <Avatar />
+        </ListItemAvatar>
         <ListItemText
           primary={<Typography variant="h6">{player.name}</Typography>}
           secondary={Orders[player.order]}

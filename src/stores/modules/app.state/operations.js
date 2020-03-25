@@ -30,15 +30,24 @@ export const subscribeUserState = () => dispatch => {
           draft.isAnonymous = null;
           draft.displayName = null;
           draft.photoUrl = null;
+          draft.twitterId = null;
         })
       );
     }
   });
 };
 
-export const signInWithTwitter = () => async () => {
+export const signInWithTwitter = () => async (dispatch, _) => {
   const result = await auth.signInWithPopup(providers.twitter);
+  console.log(result);
+  console.log(result.additionalUserInfo);
+  console.log(result.additionalUserInfo.username);
   if (result.user && result.user.providerData[0]) {
+    dispatch(
+      appStateMutate(draft => {
+        draft.twitterId = result.additionalUserInfo.username;
+      })
+    );
     result.user.updateProfile({
       displayName: result.user.providerData[0].displayName,
       photoURL: result.user.providerData[0].photoURL
