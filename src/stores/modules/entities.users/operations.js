@@ -1,19 +1,20 @@
 import actions from "./actions";
 import { db, FieldValue } from "initializer";
-import sendEvent from "modules/sendEvent";
+//import sendEvent from "modules/sendEvent";
 import { createSubscribeCollection } from "../firestoreModuleUtils";
+import { UserRecord } from "./records";
 
 const usersRef = db.collection("users");
 
-export const subscribeUsers = createSubscribeDocument(actions, usersRef);
+export const subscribeUsers = createSubscribeCollection(
+  actions,
+  (_, state) => usersRef
+);
 
-export const addUser = player => () => {
-  if (!player) return null;
-  return usersRef.doc(player.uid).set({
-    displayName: player.displayName,
-    photoUrl: player.photoUrl,
-    twitterId: player.twitterId,
-    merged: false,
+export const addUser = data => () => {
+  if (!data) return null;
+  return usersRef.doc(data.uid).set({
+    ...UserRecord(data),
     createdAt: Date.now(),
     updatedAt: Date.now()
   });

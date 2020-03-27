@@ -31,7 +31,7 @@ export const defaultResult = {
     outside: 0,
     total: -1
   },
-  id: -1
+  uid: -1
 };
 
 const calculateResult = result => {
@@ -48,6 +48,7 @@ const calculateResult = result => {
 const initialState = Array(5)
   .fill(0)
   .map(() => defaultResult);
+
 // Reducers
 const appResultsReducer = (state = initialState, action) => {
   switch (action.type) {

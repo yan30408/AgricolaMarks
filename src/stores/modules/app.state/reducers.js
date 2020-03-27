@@ -8,11 +8,7 @@ const { APP_STATE_MUTATE } = types;
 const initialState = {
   uid: null,
   isAnonymous: null,
-  displayName: null,
-  photoUrl: null,
-  twitterId: null,
 
-  currentPlayerId: -1,
   currentOrder: 0,
   isOpenMenu: false,
   isOpenResult: false,

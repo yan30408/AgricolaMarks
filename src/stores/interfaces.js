@@ -1,6 +1,7 @@
 import * as state from "./modules/app.state";
 import * as results from "./modules/app.results";
 import * as players from "./modules/app.players";
+import * as users from "./modules/entities.users";
 
 export default {
   ...state.selectors,
@@ -8,5 +9,7 @@ export default {
   ...results.selectors,
   ...results.operations,
   ...players.selectors,
-  ...players.operations
+  ...players.operations,
+  ...users.selectors,
+  ...users.operations
 };

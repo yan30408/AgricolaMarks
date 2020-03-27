@@ -65,7 +65,6 @@ const FullScreenDialog = props => {
     setOpenNewGame(false);
     d(
       store.appStateMutate(state => {
-        state.currentPlayerId = -1;
         state.currentOrder = 0;
         state.isOpenResult = false;
       })

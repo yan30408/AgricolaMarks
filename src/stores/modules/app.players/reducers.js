@@ -2,16 +2,14 @@ import types from "./types";
 import produce from "immer";
 //import reduceReducer from "reduce-reducers";
 //import { enableBatching } from "redux-batched-actions";
-import { mapValues } from "lodash";
+import { mapValues, find, uniq } from "lodash";
 import { Colors } from "Constants";
-import resultsTypes from "../app.results/types";
 
 const initialState = {
   current: mapValues(Colors, color => {
     return {
       uid: null,
-      color,
-      order: null
+      color
     };
   }),
   recent: []
@@ -33,11 +31,26 @@ const appPlayersReducer = (state = initialState, action) => {
         return draft;
       });
     }
-    case resultsTypes.APP_RESULTS_INIT: {
+    case types.APP_PLAYERS_SET: {
       return produce(state, draft => {
-        draft.current.forEach(player => {
-          player.order = null;
-        });
+        console.log(action);
+        const prestate = find(
+          draft.current,
+          player => player.uid === action.uid
+        );
+        console.log(prestate);
+        if (prestate) {
+          prestate.uid = null;
+        }
+        if (action.cid in draft.current) {
+          draft.current[action.cid].uid = action.uid;
+        }
+        return draft;
+      });
+    }
+    case types.APP_PLAYERS_UPDATE_RECENT: {
+      return produce(state, draft => {
+        draft.recent = uniq([...action.players, ...draft.recent]);
         return draft;
       });
     }

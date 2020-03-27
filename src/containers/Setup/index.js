@@ -4,11 +4,12 @@ import React, {
   useState,
   forwardRef,
   useRef,
-  useEffect
+  useEffect,
+  useMemo
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { uniq } from "lodash";
+import { map } from "lodash";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   IconButton,
@@ -18,19 +19,20 @@ import {
   Toolbar,
   AppBar,
   Typography,
-  Divider,
   Slide,
-  Button,
-  TextField
+  TextField,
+  ListItemAvatar,
+  Avatar,
+  ListItemText
 } from "@material-ui/core";
-import CloseIcon from "@material-ui/icons/Close";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import AddIcon from "@material-ui/icons/Add";
 
+import uuidv4 from "uuid/v4";
+
 import AlertDialog from "components/AlertDialog";
-import PlayerForm from "./PlayerListItem";
-import { Colors } from "Constants";
+import UserListItem from "./UserListItem";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="right" ref={ref} {...props} />;
@@ -38,7 +40,7 @@ const Transition = forwardRef((props, ref) => {
 
 const useStyles = makeStyles(theme => ({
   appBar: {
-    position: "relative"
+    position: "sticky"
   },
   flex: {
     flex: 1
@@ -48,6 +50,11 @@ const useStyles = makeStyles(theme => ({
   },
   rightIcon: {
     marginLeft: theme.spacing(1)
+  },
+  fab: {
+    position: "fixed",
+    bottom: theme.spacing(2),
+    right: theme.spacing(2)
   }
 }));
 
@@ -55,25 +62,27 @@ const FullScreenDialog = props => {
   const classes = useStyles();
   const d = useDispatch();
   const [openReset, setOpenReset] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const timer = useRef(null);
 
-  const isOpen = useSelector(state => store.getAppState(state, "isOpenSetup"));
-  const recentPlayers = useSelector(state => store.getAppRecentPlayers(state));
+  const open = useSelector(state => store.getAppState(state, "isOpenSetup"));
+  const uid = useSelector(state => store.getAppState(state, "uid"));
   const validPlayers = useSelector(state => store.getValidPlayers(state));
+  const filteredUserIds = useSelector(state =>
+    store.getFiltterdUserIds(state, { searchText })
+  );
+
   const onClose = useCallback(() => {
-    // とりえあず最大20件
-    const playerNames = validPlayers.map(player => player.name);
-    const recPlayers = uniq([...playerNames, ...recentPlayers]).slice(0, 20);
-    d(
-      store.appPlayersMutate(players => {
-        players.recent = recPlayers;
-      })
-    );
+    const playerIds = map(validPlayers, "uid");
+    if (playerIds.length > 0) {
+      d(store.appPlayersUpdateRecent(playerIds));
+    }
     d(
       store.appStateMutate(state => {
         state.isOpenSetup = false;
       })
     );
-  }, [d, validPlayers, recentPlayers]);
+  }, [d, validPlayers]);
   const onClickReset = useCallback(() => {
     setOpenReset(true);
   }, []);
@@ -84,35 +93,23 @@ const FullScreenDialog = props => {
     setOpenReset(false);
     d(
       store.appStateMutate(state => {
-        state.currentPlayerId = -1;
         state.currentOrder = 0;
       })
     );
     d(store.appPlayersInit);
     d(store.appResultsInit);
   }, [d]);
-  // const { playerIndex } = props;
-  const [searchText, setSearchText] = useState("");
-
-  // const open = useSelector(state => store.getAppState(state, "isOpenPlayerSelect"));
-
-  // const filteredUsers = useMemo(() => {
-  //   return [];
-  //   // if (!searchText) return props.systems;
-  //   // return props.systems.filter(system => {
-  //   //   return system.name.includes(searchText);
-  //   // });
-  // }, [searchText]);
-
-  // const onClose = useCallback(() => {
-  //   d(
-  //     store.appStateMutate(state => {
-  //       state.isOpenPlayerSelect = false;
-  //     })
-  //   );
-  // }, [d]);
-
-  const timer = useRef(null);
+  const onAdd = useCallback(() => {
+    d(
+      store.addUser({
+        uid: uuidv4(),
+        displayName: searchText,
+        // photoUrl: result.user.providerData[0].photoURL,
+        // twitterId: result.additionalUserInfo.username
+        madeBy: uid
+      })
+    );
+  }, [d, searchText, uid]);
   const onChange = useCallback(e => {
     const text = e.currentTarget.value;
     clearTimeout(timer.current);
@@ -120,26 +117,15 @@ const FullScreenDialog = props => {
       setSearchText(text);
     }, 100);
   }, []);
+
   useEffect(() => {
     return () => clearTimeout(timer.current);
   }, []);
 
-  // const onSelect = useCallback(user => {
-  //     d(
-  //       store.appPlayersMutate(players => {
-  //         players.current[playerIndex].name = user.displayName;
-  //         players.current[playerIndex].uid = user.displayName;
-  //         players.current[playerIndex].photoUrl = user.photoUrl;
-  //         players.current[playerIndex].twitterId = user.twitterId;
-  //       })
-  //     );
-  //     onClose();
-  // }, [props.roomId]);
-
   return (
     <Dialog
       fullScreen
-      open={isOpen}
+      open={open}
       onClose={onClose}
       TransitionComponent={Transition}
     >
@@ -149,38 +135,45 @@ const FullScreenDialog = props => {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" color="inherit" className={classes.flex}>
-            Setup Player Info
+            参加プレイヤー設定
           </Typography>
-          <IconButton color="inherit" onClick={onClose}>
-            <AddIcon />
+          <IconButton color="inherit" onClick={onClickReset}>
+            <RefreshIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
       <List>
         <ListItem>
           <TextField
-            label="検索"
-            variant="filled"
+            label="プレイヤー名"
+            variant="outlined"
             fullWidth
             defaultValue={searchText}
             onChange={onChange}
+            placeholder="プレイヤーの検索または新規登録"
+            InputLabelProps={{
+              shrink: true
+            }}
           />
         </ListItem>
-        {Array(5)
-          .fill(0)
-          .map((_, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: Colors[Object.keys(Colors)[index]].sub
-              }}
-            >
-              <ListItem>
-                <PlayerForm index={index} />
-              </ListItem>
-              <Divider />
-            </div>
-          ))}
+        {searchText !== "" ? (
+          <ListItem button onClick={onAdd} divider>
+            <ListItemAvatar>
+              <Avatar>
+                <AddIcon />
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText primary="上記の名前で新規登録する" />
+          </ListItem>
+        ) : null}
+        {searchText !== "" && filteredUserIds.length > 0 ? (
+          <ListItem>
+            <ListItemText secondary={"もしかして・・・この人ですか？"} />
+          </ListItem>
+        ) : null}
+        {filteredUserIds.map(uid => (
+          <UserListItem key={uid} uid={uid} />
+        ))}
       </List>
       <AlertDialog
         title="Reset player info ?"

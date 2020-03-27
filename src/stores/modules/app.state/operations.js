@@ -1,25 +1,26 @@
 import actions from "./actions";
-import { auth, db, providers } from "initializer";
+import { auth, providers } from "initializer";
+import { getUserById } from "../entities.users/selectors";
+import { addUser } from "../entities.users/operations";
 
 export const appStateMutate = actions.appStateMutate;
 
-export const subscribeUserState = () => dispatch => {
+export const subscribeUserState = () => (dispatch, _) => {
   return auth.onAuthStateChanged(function(user) {
     if (user) {
       // User is signed in.
       const uid = user.uid;
-      const displayName = user.displayName;
+      // const displayName = user.displayName;
       // var email = user.email;
       // var emailVerified = user.emailVerified;
-      const photoURL = user.photoURL;
+      // const photoURL = user.photoURL;
       const isAnonymous = user.isAnonymous;
       // var providerData = user.providerData;
+
       dispatch(
         appStateMutate(draft => {
           draft.uid = uid;
           draft.isAnonymous = isAnonymous;
-          draft.displayName = displayName;
-          draft.photoUrl = photoURL;
         })
       );
     } else {
@@ -28,26 +29,27 @@ export const subscribeUserState = () => dispatch => {
         appStateMutate(draft => {
           draft.uid = null;
           draft.isAnonymous = null;
-          draft.displayName = null;
-          draft.photoUrl = null;
-          draft.twitterId = null;
         })
       );
     }
   });
 };
 
-export const signInWithTwitter = () => async (dispatch, _) => {
+export const signInWithTwitter = () => async (dispatch, getState) => {
   const result = await auth.signInWithPopup(providers.twitter);
-  console.log(result);
-  console.log(result.additionalUserInfo);
-  console.log(result.additionalUserInfo.username);
   if (result.user && result.user.providerData[0]) {
-    dispatch(
-      appStateMutate(draft => {
-        draft.twitterId = result.additionalUserInfo.username;
-      })
-    );
+    const state = getState();
+    const user = getUserById(state, result.user.uid);
+    if (user.displayName === null) {
+      dispatch(
+        addUser({
+          uid: result.user.uid,
+          displayName: result.user.providerData[0].displayName,
+          photoUrl: result.user.providerData[0].photoURL,
+          twitterId: result.additionalUserInfo.username
+        })
+      );
+    }
     result.user.updateProfile({
       displayName: result.user.providerData[0].displayName,
       photoURL: result.user.providerData[0].photoURL

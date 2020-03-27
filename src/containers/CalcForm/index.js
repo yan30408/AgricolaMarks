@@ -22,48 +22,30 @@ const CalcForm = props => {
   const classes = useStyles();
   const d = useDispatch();
   const validPlayers = useSelector(state => store.getValidPlayers(state));
-  const playerId = useSelector(state =>
-    store.getAppState(state, "currentPlayerId")
-  );
   const order = useSelector(state => store.getAppState(state, "currentOrder"));
   const result = useSelector(state => store.getAppResultByIndex(state, order));
   const playerColor = useSelector(state =>
-    store.getAppCurrentPlayerById(state, playerId)
+    store.getAppCurrentPlayerById(state, result.uid)
   )?.color.sub;
-  const isInvalidPlayer = !playerId;
+  const isInvalidPlayer = result.uid !== -1;
 
   const onChangePlayer = useCallback(
     event => {
       const selectedId = event.target.value;
       d(
-        store.appPlayersMutate(players => {
-          if (playerId >= 0) {
-            players.current[playerId].order = null;
-          }
-          if (selectedId >= 0) {
-            players.current[selectedId].order = order;
-          }
-        })
-      );
-      d(
         store.appResultsMutate(results => {
-          results[order].id = selectedId;
-        })
-      );
-      d(
-        store.appStateMutate(state => {
-          state.currentPlayerId = selectedId;
+          results[order].uid = selectedId;
         })
       );
     },
-    [d, playerId, order]
+    [d, order]
   );
   const getHelperText = useMemo(() => {
     if (validPlayers.length === 0) {
-      return "Please set up from the menu in the upper left";
+      return "左上のメニューより、参加プレイヤー設定を行ってください";
     }
     if (isInvalidPlayer) {
-      return "Please Select Player";
+      return "手番プレイヤーを選択してください";
     }
     return "";
   }, [validPlayers.length, isInvalidPlayer]);
@@ -71,7 +53,7 @@ const CalcForm = props => {
   useEffect(() => {
     rsScroller.scrollToTop({ duration: 500 });
     // ボーナスの表示だけ左合わせにできなかったのでウンチみたいな処理
-    if (result.id === -1) {
+    if (result.uid === -1) {
       d(
         store.appResultsMutate(results => {
           results[order].category["Bonus"].value = 20;
@@ -85,16 +67,15 @@ const CalcForm = props => {
         );
       }, 500);
     }
-  }, [d, order, result.id]);
+  }, [d, order, result.uid]);
 
   return (
     <div style={{ backgroundColor: playerColor, padding: "50px 10px" }}>
       <form className={classes.container} noValidate autoComplete="off">
         <TextField
-          id="outlined-select-color"
           select
           label="Player"
-          value={playerId}
+          value={result.uid}
           onChange={onChangePlayer}
           margin="normal"
           variant="outlined"

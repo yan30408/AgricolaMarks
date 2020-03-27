@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { memo, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
@@ -38,20 +38,17 @@ const Home = props => {
     store.getAppState(state, "isOpenAllClear")
   );
   const order = useSelector(state => store.getAppState(state, "currentOrder"));
-  const players = useSelector(state => store.getValidPlayers(state));
   const result = useSelector(state => store.getAppResultByIndex(state, order));
 
   const onChangeOrder = useCallback(
     (_, value) => {
-      const player = players.find(player => player.order === value);
       d(
         store.appStateMutate(state => {
           state.currentOrder = value;
-          state.currentPlayerId = player ? player.id : -1;
         })
       );
     },
-    [d, players]
+    [d]
   );
   const onClickMenu = useCallback(() => {
     d(
@@ -77,7 +74,6 @@ const Home = props => {
   const onClickOkAllClear = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        state.currentPlayerId = -1;
         state.currentOrder = 0;
         state.isOpenAllClear = false;
         state.isOpenMenu = false;
@@ -87,7 +83,11 @@ const Home = props => {
   }, [d]);
 
   useEffect(() => {
-    d(store.subscribeUserState());
+    return d(store.subscribeUsers());
+  }, [d]);
+
+  useEffect(() => {
+    return d(store.subscribeUserState());
   }, [d]);
 
   return (
@@ -106,20 +106,15 @@ const Home = props => {
             textColor="primary"
             variant="fullWidth"
           >
-            {[0, 1, 2, 3, 4].map(value => {
-              const player = players.find(player => player.order === value);
-              const color = player ? player.color.sub : "";
-              return (
-                <Tab
-                  key={Orders[value]}
-                  label={Orders[value]}
-                  style={{
-                    minWidth: "20%",
-                    backgroundColor: color
-                  }}
+            {Array(5)
+              .fill(0)
+              .map((_, index) => (
+                <OrderTab
+                  key={Orders[index]}
+                  value={index}
+                  label={Orders[index]}
                 />
-              );
-            })}
+              ))}
           </Tabs>
           <div className={classes.flex} />
           <Button
@@ -154,5 +149,23 @@ const Home = props => {
     </React.Fragment>
   );
 };
+
+const OrderTab = memo(props => {
+  const result = useSelector(state =>
+    store.getAppResultByIndex(state, props.value)
+  );
+  const color = useSelector(state =>
+    store.getAppCurrentPlayerById(state, result.uid)
+  )?.color.sub;
+  return (
+    <Tab
+      {...props}
+      style={{
+        minWidth: "20%",
+        backgroundColor: color
+      }}
+    />
+  );
+});
 
 export default Home;

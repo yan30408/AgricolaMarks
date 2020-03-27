@@ -9,11 +9,12 @@ import results from "./modules/app.results";
 import players from "./modules/app.players";
 
 // entities
+import users from "./modules/entities.users";
 
 const appStatePersistConfig = {
   key: "store.app.state",
   storage,
-  whitelist: ["currentPlayerId", "currentOrder", "isOpenResult", "isOpenSetup"]
+  whitelist: ["currentOrder", "isOpenResult", "isOpenSetup"]
 };
 
 const appResultsPersistConfig = {
@@ -31,23 +32,10 @@ const rootReducer = combineReducers({
     state: persistReducer(appStatePersistConfig, state),
     results: persistReducer(appResultsPersistConfig, results),
     players: persistReducer(appPlayersPersistConfig, players)
+  }),
+  entities: combineReducers({
+    users
   })
-  //   entities: combineReducers({
-  //     rooms,
-  //     logs,
-  //     roomCharacters,
-  //     roomCommands,
-  //     roomEffects,
-  //     roomDices,
-  //     roomItems,
-  //     roomMembers,
-  //     roomMessages,
-  //     roomNotes,
-  //     roomScenes,
-  //     userFiles,
-  //     userMedia,
-  //     userHistories
-  //   })
 });
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;

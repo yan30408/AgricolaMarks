@@ -27,11 +27,7 @@ const MainMenu = props => {
   const isAnonymous = useSelector(state =>
     store.getAppState(state, "isAnonymous")
   );
-  const displayName = useSelector(state =>
-    store.getAppState(state, "displayName")
-  );
-  const photoUrl = useSelector(state => store.getAppState(state, "photoUrl"));
-  const twitterId = useSelector(state => store.getAppState(state, "twitterId"));
+  const myProfile = useSelector(state => store.getUserById(state, uid));
 
   const onClose = useCallback(() => {
     d(
@@ -81,11 +77,11 @@ const MainMenu = props => {
       <List>
         <ListItem>
           <ListItemAvatar>
-            <Avatar src={photoUrl} />
+            <Avatar src={myProfile.photoUrl} />
           </ListItemAvatar>
           <ListItemText
-            primary={displayName || "匿名ユーザー"}
-            secondary={twitterId || "Anonymous"}
+            primary={myProfile.displayName || "匿名ユーザー"}
+            secondary={myProfile.twitterId || "Anonymous"}
           />
         </ListItem>
         <ListItem button divider onClick={onClickSignin}>
