@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -7,28 +7,24 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  Typography
 } from "@material-ui/core";
 import CheckIcon from "@material-ui/icons/Check";
 
 import PlayerColorSelect from "./PlayerColorSelect";
 
-const useStyles = makeStyles(theme => ({
-  textField: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1)
+const useStyles = makeStyles({
+  spacer: {
+    flexGrow: 1
   },
-  margin: {
-    margin: theme.spacing(1)
-  },
-  flex: {
-    flex: 1
+  checkMark: {
+    minWidth: 0
   }
-}));
+});
 
 const UserListItem = props => {
   const classes = useStyles();
-  const d = useDispatch();
   const [openColorSelect, setOpenColorSelect] = useState(false);
   const anchorEl = useRef(null);
 
@@ -43,7 +39,7 @@ const UserListItem = props => {
 
   const onSelect = useCallback(() => {
     setOpenColorSelect(true);
-  }, [d]);
+  }, []);
   const onCloseColorSelect = useCallback(() => {
     setOpenColorSelect(false);
   }, []);
@@ -60,11 +56,11 @@ const UserListItem = props => {
           <Avatar src={user.photoUrl} />
         </ListItemAvatar>
         <ListItemText
-          primary={user.displayName}
+          primary={<Typography noWrap>{user.displayName}</Typography>}
           secondary={user.twitterId || madeBy || "Anonymous"}
         />
-        <div style={{ flexGrow: 1 }} />
-        <ListItemIcon ref={anchorEl} style={{ minWidth: 0 }}>
+        <div className={classes.spacer} />
+        <ListItemIcon className={classes.checkMark} ref={anchorEl}>
           {color ? <CheckIcon /> : null}
         </ListItemIcon>
       </ListItem>

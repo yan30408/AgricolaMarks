@@ -8,11 +8,11 @@ const actions = {
     };
   },
   appPlayersInit: { type: types.APP_PLAYERS_INIT },
-  appPlayersSet: (cid, uid) => {
+  appPlayersSet: (cid, user) => {
     return {
       type: types.APP_PLAYERS_SET,
       cid,
-      uid
+      user
     };
   },
   appPlayersUpdateRecent: players => {

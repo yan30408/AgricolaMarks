@@ -45,9 +45,8 @@ const calculateResult = result => {
   result.score.inFarm = result.score.total - result.score.outside;
 };
 
-const initialState = Array(5)
-  .fill(0)
-  .map(() => defaultResult);
+// persistReducer を噛ませると、なぜか連想配列になってしまう
+const initialState = Array(5).fill(defaultResult);
 
 // Reducers
 const appResultsReducer = (state = initialState, action) => {

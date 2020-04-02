@@ -30,10 +30,16 @@ export const getValidUserIds = createSelector(
   }
 );
 
+const getUId = state => getAppState(state, "uid");
+
 export const getRecentUserIds = createSelector(
-  [getValidUserIds, getAppRecentPlayers],
-  (ids, recentIds) => {
-    return uniq([...recentIds, ...ids]);
+  [getValidUserIds, getAppRecentPlayers, getUId],
+  (ids, recentIds, uid) => {
+    if (uid) {
+      return uniq([uid, ...recentIds, ...ids]);
+    } else {
+      return uniq([...recentIds, ...ids]);
+    }
   }
 );
 

@@ -2,7 +2,7 @@ import React, { memo, useCallback, useMemo, Fragment, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
-import { MenuItem, TextField, Grid } from "@material-ui/core";
+import { MenuItem, TextField, Grid, Typography } from "@material-ui/core";
 import rsScroller from "react-smooth-scroller";
 
 import { ScoreByRoomType } from "Constants";
@@ -27,16 +27,11 @@ const CalcForm = props => {
   const playerColor = useSelector(state =>
     store.getAppCurrentPlayerById(state, result.uid)
   )?.color.sub;
-  const isInvalidPlayer = result.uid !== -1;
+  const isInvalidPlayer = result.uid === -1;
 
   const onChangePlayer = useCallback(
     event => {
-      const selectedId = event.target.value;
-      d(
-        store.appResultsMutate(results => {
-          results[order].uid = selectedId;
-        })
-      );
+      d(store.appResultsSetPlayer(event.target.value, order));
     },
     [d, order]
   );
@@ -84,7 +79,7 @@ const CalcForm = props => {
           fullWidth
         >
           {validPlayers
-            .filter(player => player.order === null || player.order === order)
+            .filter(player => player.order === -1 || player.order === order)
             .map(player => (
               <MenuItem
                 key={player.uid}
@@ -94,7 +89,7 @@ const CalcForm = props => {
                   backgroundColor: player.color.sub
                 }}
               >
-                {player.name}
+                <Typography noWrap>{player.name}</Typography>
               </MenuItem>
             ))}
           <MenuItem key="-1" value={-1}>

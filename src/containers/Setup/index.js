@@ -4,8 +4,7 @@ import React, {
   useState,
   forwardRef,
   useRef,
-  useEffect,
-  useMemo
+  useEffect
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
@@ -23,13 +22,13 @@ import {
   TextField,
   ListItemAvatar,
   Avatar,
-  ListItemText
+  ListItemText,
+  InputAdornment
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import AddIcon from "@material-ui/icons/Add";
-
-import uuidv4 from "uuid/v4";
+import CancelIcon from "@material-ui/icons/Cancel";
 
 import AlertDialog from "components/AlertDialog";
 import UserListItem from "./UserListItem";
@@ -62,14 +61,14 @@ const FullScreenDialog = props => {
   const classes = useStyles();
   const d = useDispatch();
   const [openReset, setOpenReset] = useState(false);
-  const [searchText, setSearchText] = useState("");
+  const [playerNameText, setPlayerNameText] = useState("");
   const timer = useRef(null);
 
   const open = useSelector(state => store.getAppState(state, "isOpenSetup"));
   const uid = useSelector(state => store.getAppState(state, "uid"));
   const validPlayers = useSelector(state => store.getValidPlayers(state));
   const filteredUserIds = useSelector(state =>
-    store.getFiltterdUserIds(state, { searchText })
+    store.getFiltterdUserIds(state, { searchText: playerNameText })
   );
 
   const onClose = useCallback(() => {
@@ -99,22 +98,24 @@ const FullScreenDialog = props => {
     d(store.appPlayersInit);
     d(store.appResultsInit);
   }, [d]);
+  const onCancel = useCallback(() => {
+    setPlayerNameText("");
+  }, []);
   const onAdd = useCallback(() => {
     d(
       store.addUser({
-        uid: uuidv4(),
-        displayName: searchText,
+        displayName: playerNameText,
         // photoUrl: result.user.providerData[0].photoURL,
         // twitterId: result.additionalUserInfo.username
         madeBy: uid
       })
     );
-  }, [d, searchText, uid]);
+  }, [d, playerNameText, uid]);
   const onChange = useCallback(e => {
     const text = e.currentTarget.value;
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      setSearchText(text);
+      setPlayerNameText(text);
     }, 100);
   }, []);
 
@@ -148,15 +149,24 @@ const FullScreenDialog = props => {
             label="プレイヤー名"
             variant="outlined"
             fullWidth
-            defaultValue={searchText}
+            value={playerNameText}
             onChange={onChange}
             placeholder="プレイヤーの検索または新規登録"
             InputLabelProps={{
               shrink: true
             }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={onCancel} edge="end">
+                    <CancelIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
         </ListItem>
-        {searchText !== "" ? (
+        {playerNameText !== "" ? (
           <ListItem button onClick={onAdd} divider>
             <ListItemAvatar>
               <Avatar>
@@ -166,7 +176,7 @@ const FullScreenDialog = props => {
             <ListItemText primary="上記の名前で新規登録する" />
           </ListItem>
         ) : null}
-        {searchText !== "" && filteredUserIds.length > 0 ? (
+        {playerNameText !== "" && filteredUserIds.length > 0 ? (
           <ListItem>
             <ListItemText secondary={"もしかして・・・この人ですか？"} />
           </ListItem>

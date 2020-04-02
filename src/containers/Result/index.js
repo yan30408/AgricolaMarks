@@ -44,9 +44,8 @@ const useStyles = makeStyles(theme => ({
 const FullScreenDialog = props => {
   const classes = useStyles();
   const d = useDispatch();
-  const isOpen = useSelector(state => store.getAppState(state, "isOpenResult"));
+  const open = useSelector(state => store.getAppState(state, "isOpenResult"));
   const sortedResult = useSelector(state => store.getSortedResult(state));
-
   const [openNewGame, setOpenNewGame] = useState(false);
   const onClose = useCallback(() => {
     d(
@@ -76,7 +75,7 @@ const FullScreenDialog = props => {
   return (
     <Dialog
       fullScreen
-      open={isOpen}
+      open={open}
       onClose={onClose}
       TransitionComponent={Transition}
     >
@@ -99,7 +98,7 @@ const FullScreenDialog = props => {
           </ListItemText>
         </ListItem>
         {sortedResult.map(result => (
-          <ResultListItem key={result.id} {...result} />
+          <ResultListItem key={result.uid} {...result} />
         ))}
         <ListItem>
           <Button

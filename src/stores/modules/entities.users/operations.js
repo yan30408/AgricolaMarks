@@ -11,9 +11,18 @@ export const subscribeUsers = createSubscribeCollection(
   (_, state) => usersRef
 );
 
-export const addUser = data => () => {
+export const createUser = data => () => {
   if (!data) return null;
   return usersRef.doc(data.uid).set({
+    ...UserRecord(data),
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
+};
+
+export const addUser = data => () => {
+  if (!data) return null;
+  return usersRef.add({
     ...UserRecord(data),
     createdAt: Date.now(),
     updatedAt: Date.now()

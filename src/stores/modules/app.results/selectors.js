@@ -1,8 +1,10 @@
 import { createSelector } from "reselect";
 import { defaultResult } from "./reducers";
+import { toArray } from "lodash";
 
+// persistReducer を噛ませると、なぜか連想配列になってしまうので変換
 export const getAppResults = state => {
-  return state.app.results;
+  return toArray(state.app.results).slice(0, 5);
 };
 
 export const getAppResultByIndex = (state, index) => {
@@ -10,14 +12,7 @@ export const getAppResultByIndex = (state, index) => {
 };
 
 export const getSortedResult = createSelector(getAppResults, results => {
-  return Object.keys(results)
-    .map(key => results[key])
-    .filter(result => "id" in result && result.id !== -1)
-    .sort((a, b) => {
-      if (a.score.total < b.score.total) {
-        return 1;
-      } else {
-        return -1;
-      }
-    });
+  return results
+    .filter(result => result.uid !== -1)
+    .sort((a, b) => b.score.total - a.score.total);
 });

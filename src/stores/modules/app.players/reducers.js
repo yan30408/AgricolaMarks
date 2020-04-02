@@ -2,13 +2,17 @@ import types from "./types";
 import produce from "immer";
 //import reduceReducer from "reduce-reducers";
 //import { enableBatching } from "redux-batched-actions";
-import { mapValues, find, uniq } from "lodash";
+import { mapValues, find, uniq, forEach } from "lodash";
 import { Colors } from "Constants";
+import resultsTypes from "../app.results/types";
 
 const initialState = {
   current: mapValues(Colors, color => {
     return {
       uid: null,
+      name: null,
+      iconUrl: null,
+      order: -1,
       color
     };
   }),
@@ -33,17 +37,21 @@ const appPlayersReducer = (state = initialState, action) => {
     }
     case types.APP_PLAYERS_SET: {
       return produce(state, draft => {
-        console.log(action);
+        const user = action.user;
         const prestate = find(
           draft.current,
-          player => player.uid === action.uid
+          player => player.uid && player.uid === user._id
         );
-        console.log(prestate);
         if (prestate) {
           prestate.uid = null;
+          prestate.name = null;
+          prestate.iconUrl = null;
         }
         if (action.cid in draft.current) {
-          draft.current[action.cid].uid = action.uid;
+          const player = draft.current[action.cid];
+          player.uid = user._id;
+          player.name = user.displayName;
+          player.iconUrl = user.photoUrl;
         }
         return draft;
       });
@@ -52,6 +60,13 @@ const appPlayersReducer = (state = initialState, action) => {
       return produce(state, draft => {
         draft.recent = uniq([...action.players, ...draft.recent]);
         return draft;
+      });
+    }
+    case resultsTypes.APP_RESULTS_INIT: {
+      return produce(state, draft => {
+        forEach(draft.current, player => {
+          player.order = -1;
+        });
       });
     }
     default: {

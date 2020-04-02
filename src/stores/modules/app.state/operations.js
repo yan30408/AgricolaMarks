@@ -1,7 +1,7 @@
 import actions from "./actions";
 import { auth, providers } from "initializer";
 import { getUserById } from "../entities.users/selectors";
-import { addUser } from "../entities.users/operations";
+import { createUser } from "../entities.users/operations";
 
 export const appStateMutate = actions.appStateMutate;
 
@@ -42,7 +42,7 @@ export const signInWithTwitter = () => async (dispatch, getState) => {
     const user = getUserById(state, result.user.uid);
     if (user.displayName === null) {
       dispatch(
-        addUser({
+        createUser({
           uid: result.user.uid,
           displayName: result.user.providerData[0].displayName,
           photoUrl: result.user.providerData[0].photoURL,

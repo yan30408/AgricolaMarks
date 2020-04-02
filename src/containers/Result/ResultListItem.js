@@ -12,18 +12,24 @@ import { Orders } from "Constants";
 
 const ResultListItem = props => {
   const player = useSelector(state =>
-    store.getAppCurrentPlayerById(state, props.id)
+    store.getAppCurrentPlayerById(state, props.uid)
   );
+  if (!player) return null;
+
   return (
     <div>
       <ListItem style={{ backgroundColor: player.color.sub }} divider>
         <ListItemAvatar>
-          <Avatar />
+          <Avatar src={player.iconUrl} />
         </ListItemAvatar>
         <ListItemText
-          primary={<Typography variant="h6">{player.name}</Typography>}
+          primary={
+            <Typography variant="h6" noWrap>
+              {player.name}
+            </Typography>
+          }
           secondary={Orders[player.order]}
-          style={{ width: 100 }}
+          style={{ flex: 5 }}
         />
         <ListItemText
           secondary={
@@ -32,7 +38,7 @@ const ResultListItem = props => {
             </Typography>
           }
         />
-        <ListItemText secondary={" → "} />
+        <ListItemText secondary={"→"} />
         <ListItemText
           primary={<Typography variant="h5">{props.score.total}</Typography>}
         />

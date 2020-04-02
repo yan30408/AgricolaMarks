@@ -65,6 +65,7 @@ const MainMenu = props => {
       d(store.signInWithTwitter());
     }
   }, [d, uid, isAnonymous]);
+  const onClickOldVersion = () => {};
 
   return (
     <SwipeableDrawer
@@ -100,6 +101,9 @@ const MainMenu = props => {
         </ListItem>
         <ListItem button onClick={onClickAbout} divider>
           <ListItemText primary="このアプリについて" />
+        </ListItem>
+        <ListItem button onClick={onClickOldVersion} divider>
+          <ListItemText primary="Ver.1(旧バージョン)を使う" />
         </ListItem>
       </List>
     </SwipeableDrawer>

@@ -1,32 +1,61 @@
-import React, { memo, useCallback, forwardRef } from "react";
-import { useDispatch } from "react-redux";
+import React, { memo, useCallback, forwardRef, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { Menu, MenuItem } from "@material-ui/core";
+import { Menu, MenuItem, ListItemText, Typography } from "@material-ui/core";
 import { Colors } from "Constants";
 
 const PlayerColorSelect = forwardRef((props, ref) => {
   return (
-    <Menu open={props.open} onClose={() => props.onClose()} anchorEl={ref}>
+    <Menu
+      open={props.open}
+      onClose={() => props.onClose()}
+      anchorEl={ref}
+      PaperProps={{
+        style: {
+          width: "215px"
+        }
+      }}
+    >
       {Object.keys(Colors).map(key => (
         <PlayerColorSelectItem {...props} key={key} colorId={key} />
       ))}
-      <PlayerColorSelectItem {...props} key="blank" colorId={"blank"} />
     </Menu>
   );
 });
 
 const PlayerColorSelectItem = memo(props => {
+  const { colorId, uid, onClose } = props;
   const d = useDispatch();
+  const user = useSelector(state => store.getUserById(state, uid));
+  const player = useSelector(state =>
+    store.getAppCurrentPlayer(state, colorId)
+  );
+
   const onSelect = useCallback(() => {
-    d(store.appPlayersSet(props.colorId, props.uid));
-    props.onClose();
-  }, [d, props.colorId, props.uid]);
+    d(store.appPlayersSet(player.uid === uid ? null : colorId, user));
+    onClose();
+  }, [d, colorId, user, onClose]);
+
+  const menuLabel = useMemo(() => {
+    if (player.uid) {
+      return player.uid === uid ? "登録を解除する" : "プレイヤーを置き換える";
+    }
+    return "登録する";
+  }, [player, uid]);
+
   return (
     <MenuItem
-      style={{ backgroundColor: Colors[props.colorId]?.sub }}
+      style={{
+        backgroundColor: Colors[colorId].sub,
+        color: Colors[colorId].main
+      }}
       onClick={onSelect}
     >
-      {props.colorId}
+      <ListItemText
+        primary={menuLabel}
+        secondary={player.name}
+        secondaryTypographyProps={{ noWrap: true }}
+      />
     </MenuItem>
   );
 });

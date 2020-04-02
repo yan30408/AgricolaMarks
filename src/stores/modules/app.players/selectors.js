@@ -1,16 +1,26 @@
 import { createSelector } from "reselect";
-import { filter, find } from "lodash";
+import { filter, find, findKey } from "lodash";
 
 export const getAppPlayers = (state, key) => {
   return state.app.players[key];
 };
 
-export const getAppCurrentPlayer = (state, colorId) => {
-  return state.app.players.current[colorId];
+export const getAppCurrentPlayer = (state, key) => {
+  return state.app.players.current[key];
 };
 
 export const getAppCurrentPlayerById = (state, uid) => {
-  return find(state.app.players.current, player => player.uid === uid);
+  return find(
+    state.app.players.current,
+    player => player.uid && player.uid === uid
+  );
+};
+
+export const getAppCurrentPlayerKey = (state, uid) => {
+  return findKey(
+    state.app.players.current,
+    player => player.uid && player.uid === uid
+  );
 };
 
 export const getAppCurrentPlayers = state => {
