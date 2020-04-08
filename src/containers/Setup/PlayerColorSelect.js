@@ -1,7 +1,7 @@
 import React, { memo, useCallback, forwardRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { Menu, MenuItem, ListItemText, Typography } from "@material-ui/core";
+import { Menu, MenuItem, ListItemText } from "@material-ui/core";
 import { Colors } from "Constants";
 
 const PlayerColorSelect = forwardRef((props, ref) => {
@@ -23,7 +23,7 @@ const PlayerColorSelect = forwardRef((props, ref) => {
   );
 });
 
-const PlayerColorSelectItem = memo(props => {
+const PlayerColorSelectItem = forwardRef((props, ref) => {
   const { colorId, uid, onClose } = props;
   const d = useDispatch();
   const user = useSelector(state => store.getUserById(state, uid));
@@ -34,14 +34,14 @@ const PlayerColorSelectItem = memo(props => {
   const onSelect = useCallback(() => {
     d(store.appPlayersSet(player.uid === uid ? null : colorId, user));
     onClose();
-  }, [d, colorId, user, onClose]);
+  }, [d, colorId, user, player.uid, uid, onClose]);
 
   const menuLabel = useMemo(() => {
     if (player.uid) {
       return player.uid === uid ? "登録を解除する" : "プレイヤーを置き換える";
     }
     return "登録する";
-  }, [player, uid]);
+  }, [player.uid, uid]);
 
   return (
     <MenuItem

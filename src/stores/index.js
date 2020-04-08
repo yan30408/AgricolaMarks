@@ -5,11 +5,12 @@ import storage from "redux-persist/lib/storage";
 
 // app
 import state from "./modules/app.state";
-import results from "./modules/app.results";
-import players from "./modules/app.players";
+import appResults from "./modules/app.results";
+import appPlayers from "./modules/app.players";
 
 // entities
 import users from "./modules/entities.users";
+import results from "./modules/entities.results";
 
 const appStatePersistConfig = {
   key: "store.app.state",
@@ -30,11 +31,12 @@ const appPlayersPersistConfig = {
 const rootReducer = combineReducers({
   app: combineReducers({
     state: persistReducer(appStatePersistConfig, state),
-    results: persistReducer(appResultsPersistConfig, results),
-    players: persistReducer(appPlayersPersistConfig, players)
+    results: persistReducer(appResultsPersistConfig, appResults),
+    players: persistReducer(appPlayersPersistConfig, appPlayers)
   }),
   entities: combineReducers({
-    users
+    users,
+    results
   })
 });
 

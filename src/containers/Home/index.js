@@ -19,6 +19,7 @@ import MenuIcon from "@material-ui/icons/Menu";
 import CalcForm from "containers/CalcForm";
 import Result from "containers/Result";
 import Setup from "containers/Setup";
+import PlayerList from "containers/PlayerList";
 import AboutDialog from "containers/AboutDialog";
 import AlertDialog from "components/AlertDialog";
 import { Orders } from "Constants";
@@ -85,9 +86,11 @@ const Home = props => {
   useEffect(() => {
     return d(store.subscribeUsers());
   }, [d]);
-
   useEffect(() => {
     return d(store.subscribeUserState());
+  }, [d]);
+  useEffect(() => {
+    return d(store.subscribeResults());
   }, [d]);
 
   return (
@@ -145,6 +148,7 @@ const Home = props => {
       >
         現在入力中のスコアを全てリセットしますか？
       </AlertDialog>
+      <PlayerList />
       <AboutDialog />
     </React.Fragment>
   );

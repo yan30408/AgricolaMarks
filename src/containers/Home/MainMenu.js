@@ -36,6 +36,13 @@ const MainMenu = props => {
       })
     );
   }, [d]);
+  const onOpen = useCallback(() => {
+    d(
+      store.appStateMutate(state => {
+        state.isOpenMenu = true;
+      })
+    );
+  }, [d]);
   const onClickAbout = useCallback(() => {
     d(
       store.appStateMutate(state => {
@@ -65,15 +72,30 @@ const MainMenu = props => {
       d(store.signInWithTwitter());
     }
   }, [d, uid, isAnonymous]);
-  const onClickOldVersion = () => {};
+  const onClickOldVersion = useCallback(() => {
+    window.location.href = "http://spielembryo.geo.jp/app/agricolamarks/";
+  }, []);
+  const onClickResultList = useCallback(() => {
+    d(
+      store.appStateMutate(state => {
+        state.isOpenResultList = true;
+      })
+    );
+  }, [d]);
+  const onClickPlayerList = useCallback(() => {
+    d(
+      store.appStateMutate(state => {
+        state.isOpenPlayerList = true;
+      })
+    );
+  }, [d]);
 
   return (
     <SwipeableDrawer
       anchor="left"
       open={open}
       onClose={onClose}
-      // onClose={toggleDrawer(anchor, false)}
-      // onOpen={toggleDrawer(anchor, true)}
+      onOpen={onOpen}
     >
       <List>
         <ListItem>
@@ -99,7 +121,22 @@ const MainMenu = props => {
         <ListItem button onClick={onClickAllClear} divider>
           <ListItemText primary="現在の入力を全て消す" />
         </ListItem>
-        <ListItem button onClick={onClickAbout} divider>
+        <ListItem button onClick={onClickResultList}>
+          <ListItemText
+            primary="結果一覧"
+            secondary={"できてません！鋭意実装中"}
+          />
+          <ListItemIcon>
+            <ArrowForwardIcon />
+          </ListItemIcon>
+        </ListItem>
+        <ListItem button onClick={onClickPlayerList} divider>
+          <ListItemText primary="プレイヤー一覧" />
+          <ListItemIcon>
+            <ArrowForwardIcon />
+          </ListItemIcon>
+        </ListItem>
+        <ListItem button onClick={onClickAbout}>
           <ListItemText primary="このアプリについて" />
         </ListItem>
         <ListItem button onClick={onClickOldVersion} divider>

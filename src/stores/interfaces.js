@@ -1,15 +1,18 @@
 import * as state from "./modules/app.state";
-import * as results from "./modules/app.results";
-import * as players from "./modules/app.players";
+import * as appResults from "./modules/app.results";
+import * as appPlayers from "./modules/app.players";
 import * as users from "./modules/entities.users";
+import * as results from "./modules/entities.results";
 
 export default {
   ...state.selectors,
   ...state.operations,
-  ...results.selectors,
-  ...results.operations,
-  ...players.selectors,
-  ...players.operations,
+  ...appResults.selectors,
+  ...appResults.operations,
+  ...appPlayers.selectors,
+  ...appPlayers.operations,
   ...users.selectors,
-  ...users.operations
+  ...users.operations,
+  ...results.selectors,
+  ...results.operations
 };

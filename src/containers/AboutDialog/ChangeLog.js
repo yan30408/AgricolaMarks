@@ -1,5 +1,13 @@
 export default [
   {
+    version: "2.0.0",
+    date: "2020.4.2",
+    changes: [
+      "プレイヤー登録(Twitter連携)を行えるようになりました",
+      "戦績を記録できるようになりました(表示部は未実装)"
+    ]
+  },
+  {
     version: "1.5.1",
     date: "2020.1.29",
     changes: [

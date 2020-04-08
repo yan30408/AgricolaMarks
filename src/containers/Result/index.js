@@ -1,4 +1,10 @@
-import React, { memo, useState, useCallback, forwardRef } from "react";
+import React, {
+  memo,
+  useState,
+  useCallback,
+  forwardRef,
+  useEffect
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
@@ -7,20 +13,24 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemText,
   Toolbar,
   Dialog,
   AppBar,
   Typography,
   Slide
 } from "@material-ui/core";
+import {
+  KeyboardDateTimePicker,
+  MuiPickersUtilsProvider
+} from "@material-ui/pickers";
+import DateFnsUtils from "@date-io/date-fns";
+
 import CloseIcon from "@material-ui/icons/Close";
 import SaveIcon from "@material-ui/icons/Save";
 import DeleteIcon from "@material-ui/icons/Delete";
 
 import AlertDialog from "components/AlertDialog";
 import ResultListItem from "./ResultListItem";
-import { format } from "date-fns";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -47,6 +57,9 @@ const FullScreenDialog = props => {
   const open = useSelector(state => store.getAppState(state, "isOpenResult"));
   const sortedResult = useSelector(state => store.getSortedResult(state));
   const [openNewGame, setOpenNewGame] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isSave, setIsSave] = useState(true);
+
   const onClose = useCallback(() => {
     d(
       store.appStateMutate(state => {
@@ -54,14 +67,22 @@ const FullScreenDialog = props => {
       })
     );
   }, [d]);
-  const onClickNewGame = useCallback(() => {
+  const onClickNewGameWithSave = useCallback(() => {
     setOpenNewGame(true);
+    setIsSave(true);
+  }, []);
+  const onClickNewGameWithNoSave = useCallback(() => {
+    setOpenNewGame(true);
+    setIsSave(false);
   }, []);
   const onCloseNewGame = useCallback(() => {
     setOpenNewGame(false);
   }, []);
   const onClickOkNewGame = useCallback(() => {
     setOpenNewGame(false);
+    if (isSave) {
+      d(store.addResult({ date: selectedDate, results: sortedResult }));
+    }
     d(
       store.appStateMutate(state => {
         state.currentOrder = 0;
@@ -69,8 +90,14 @@ const FullScreenDialog = props => {
       })
     );
     d(store.appResultsInit);
-  }, [d]);
-  const date = format(new Date(), "yyyy.MM.dd - HH:mm:ss");
+  }, [d, isSave, selectedDate, sortedResult]);
+  const onDateChange = useCallback(date => {
+    setSelectedDate(date);
+  }, []);
+
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, [open]);
 
   return (
     <Dialog
@@ -90,12 +117,16 @@ const FullScreenDialog = props => {
         </Toolbar>
       </AppBar>
       <List>
-        <ListItem divider>
-          <ListItemText>
-            <Typography variant="h6" align="center">
-              {date}
-            </Typography>
-          </ListItemText>
+        <ListItem divider style={{ justifyContent: "center" }}>
+          <MuiPickersUtilsProvider utils={DateFnsUtils}>
+            <KeyboardDateTimePicker
+              style={{ textAlign: "center" }}
+              format="yyyy.MM.dd - HH:mm:ss"
+              inputVariant="outlined"
+              value={selectedDate}
+              onChange={onDateChange}
+            />
+          </MuiPickersUtilsProvider>
         </ListItem>
         {sortedResult.map(result => (
           <ResultListItem key={result.uid} {...result} />
@@ -103,7 +134,7 @@ const FullScreenDialog = props => {
         <ListItem>
           <Button
             color="primary"
-            onClick={onClickNewGame}
+            onClick={onClickNewGameWithSave}
             fullWidth
             variant="contained"
           >
@@ -114,7 +145,7 @@ const FullScreenDialog = props => {
         <ListItem>
           <Button
             color="secondary"
-            onClick={onClickNewGame}
+            onClick={onClickNewGameWithNoSave}
             fullWidth
             variant="contained"
           >

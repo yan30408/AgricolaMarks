@@ -12,8 +12,6 @@ import {
 } from "@material-ui/core";
 import CheckIcon from "@material-ui/icons/Check";
 
-import PlayerColorSelect from "./PlayerColorSelect";
-
 const useStyles = makeStyles({
   spacer: {
     flexGrow: 1
@@ -25,7 +23,6 @@ const useStyles = makeStyles({
 
 const UserListItem = props => {
   const classes = useStyles();
-  const [openColorSelect, setOpenColorSelect] = useState(false);
   const anchorEl = useRef(null);
 
   const user = useSelector(state => store.getUserById(state, props.uid));
@@ -37,22 +34,12 @@ const UserListItem = props => {
   )?.twitterId;
   const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
 
-  const onSelect = useCallback(() => {
-    setOpenColorSelect(true);
-  }, []);
-  const onCloseColorSelect = useCallback(() => {
-    setOpenColorSelect(false);
-  }, []);
+  const onSelect = useCallback(() => {}, []);
   if (!user) return null;
 
   return (
     <>
-      <ListItem
-        button
-        onClick={onSelect}
-        style={{ backgroundColor: color }}
-        divider
-      >
+      <ListItem button onClick={onSelect} divider>
         <ListItemAvatar>
           <Avatar src={user.photoUrl} />
         </ListItemAvatar>
@@ -65,12 +52,6 @@ const UserListItem = props => {
           {color ? <CheckIcon /> : <></>}
         </ListItemIcon>
       </ListItem>
-      <PlayerColorSelect
-        open={openColorSelect}
-        onClose={onCloseColorSelect}
-        ref={anchorEl.current}
-        uid={props.uid}
-      />
     </>
   );
 };

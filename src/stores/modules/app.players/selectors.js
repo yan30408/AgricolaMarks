@@ -32,5 +32,5 @@ export const getAppRecentPlayers = state => {
 };
 
 export const getValidPlayers = createSelector(getAppCurrentPlayers, players => {
-  return filter(players, player => player.uid !== null);
+  return filter(players, player => player.uid);
 });
