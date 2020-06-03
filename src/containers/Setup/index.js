@@ -62,13 +62,14 @@ const FullScreenDialog = props => {
   const d = useDispatch();
   const [openReset, setOpenReset] = useState(false);
   const [playerNameText, setPlayerNameText] = useState("");
+  const [searchText, setSearchText] = useState("");
   const timer = useRef(null);
 
   const open = useSelector(state => store.getAppState(state, "isOpenSetup"));
   const uid = useSelector(state => store.getAppState(state, "uid"));
   const validPlayers = useSelector(state => store.getValidPlayers(state));
   const filteredUserIds = useSelector(state =>
-    store.getFiltterdUserIds(state, { searchText: playerNameText })
+    store.getFiltterdUserIds(state, { searchText })
   );
 
   const onClose = useCallback(() => {
@@ -100,6 +101,7 @@ const FullScreenDialog = props => {
   }, [d]);
   const onCancel = useCallback(() => {
     setPlayerNameText("");
+    setSearchText("");
   }, []);
   const onAdd = useCallback(() => {
     d(
@@ -113,10 +115,11 @@ const FullScreenDialog = props => {
   }, [d, playerNameText, uid]);
   const onChange = useCallback(e => {
     const text = e.currentTarget.value;
+    setPlayerNameText(text);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      setPlayerNameText(text);
-    }, 100);
+      setSearchText(text);
+    }, 500);
   }, []);
 
   useEffect(() => {

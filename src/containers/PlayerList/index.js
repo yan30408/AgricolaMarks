@@ -74,6 +74,7 @@ const useStyles = makeStyles(theme => ({
 const PlayerList = props => {
   const classes = useStyles();
   const d = useDispatch();
+  const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [navigation, setNavigation] = useState("plays");
   const timer = useRef(null);
@@ -84,7 +85,7 @@ const PlayerList = props => {
   const uid = useSelector(state => store.getAppState(state, "uid"));
   const validPlayers = useSelector(state => store.getValidPlayers(state));
   const filteredUserIds = useSelector(state =>
-    store.getFiltterdUserIds(state, { searchText: searchText })
+    store.getFiltterdUserIds(state, { searchText })
   );
 
   const onClose = useCallback(() => {
@@ -95,14 +96,16 @@ const PlayerList = props => {
     );
   }, [d]);
   const onCancel = useCallback(() => {
+    setPlayerNameText("");
     setSearchText("");
   }, []);
   const onChange = useCallback(e => {
     const text = e.currentTarget.value;
+    setPlayerNameText(text);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setSearchText(text);
-    }, 100);
+    }, 500);
   }, []);
 
   useEffect(() => {
@@ -132,7 +135,7 @@ const PlayerList = props => {
             label="プレイヤー名"
             variant="outlined"
             fullWidth
-            value={searchText}
+            value={playerNameText}
             onChange={onChange}
             placeholder="プレイヤーの検索"
             InputLabelProps={{
