@@ -73,6 +73,7 @@ const FullScreenDialog = props => {
   );
 
   const onClose = useCallback(() => {
+    onCancel();
     const playerIds = map(validPlayers, "uid");
     if (playerIds.length > 0) {
       d(store.appPlayersUpdateRecent(playerIds));
@@ -112,6 +113,7 @@ const FullScreenDialog = props => {
         createdBy: uid
       })
     );
+    onCancel();
   }, [d, playerNameText, uid]);
   const onChange = useCallback(e => {
     const text = e.currentTarget.value;

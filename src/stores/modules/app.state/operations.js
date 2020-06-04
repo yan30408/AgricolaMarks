@@ -1,7 +1,7 @@
 import actions from "./actions";
 import { auth, providers } from "initializer";
 import { getUserById } from "../entities.users/selectors";
-import { createUser } from "../entities.users/operations";
+import { createUser, updateUser } from "../entities.users/operations";
 
 export const appStateMutate = actions.appStateMutate;
 
@@ -10,19 +10,19 @@ export const subscribeUserState = () => (dispatch, _) => {
     if (user) {
       // User is signed in.
       const uid = user.uid;
-      // const displayName = user.displayName;
+      const displayName = user.displayName;
       // var email = user.email;
       // var emailVerified = user.emailVerified;
-      // const photoURL = user.photoURL;
+      const photoUrl = user.photoURL;
       const isAnonymous = user.isAnonymous;
       // var providerData = user.providerData;
-
       dispatch(
         appStateMutate(draft => {
           draft.uid = uid;
           draft.isAnonymous = isAnonymous;
         })
       );
+      dispatch(updateUser(uid, { displayName, photoUrl }));
     } else {
       auth.signInAnonymously(); // force login
       dispatch(

@@ -3,6 +3,7 @@ import { db, FieldValue } from "initializer";
 //import sendEvent from "modules/sendEvent";
 import { createSubscribeCollection } from "../firestoreModuleUtils";
 import { UserRecord } from "./records";
+import { appPlayersUpdateRecent } from "../app.players/operations";
 
 const usersRef = db.collection("users");
 
@@ -20,11 +21,23 @@ export const createUser = data => () => {
   });
 };
 
-export const addUser = data => () => {
+export const addUser = data => (dispatch, _) => {
   if (!data) return null;
-  return usersRef.add({
-    ...UserRecord(data),
-    createdAt: Date.now(),
+  return usersRef
+    .add({
+      ...UserRecord(data),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    })
+    .then(docRef => {
+      dispatch(appPlayersUpdateRecent([docRef.id]));
+    });
+};
+
+export const updateUser = (uid, data) => () => {
+  if (!data) return null;
+  return usersRef.doc(uid).update({
+    ...data,
     updatedAt: Date.now()
   });
 };

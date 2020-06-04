@@ -50,8 +50,8 @@ export const getFiltterdUserIds = createSelector(
     if (searchText === "") return ids;
     return ids.filter(id => {
       return (
-        users[id].displayName?.includes(searchText) ||
-        users[id].twitterId?.includes(searchText)
+        users[id]?.displayName?.includes(searchText) ||
+        users[id]?.twitterId?.includes(searchText)
       );
     });
   }

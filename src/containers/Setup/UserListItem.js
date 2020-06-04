@@ -43,7 +43,7 @@ const UserListItem = props => {
   const onCloseColorSelect = useCallback(() => {
     setOpenColorSelect(false);
   }, []);
-  if (!user) return null;
+  if (!user.displayName) return null;
 
   return (
     <>
