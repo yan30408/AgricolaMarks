@@ -40,6 +40,7 @@ const Home = props => {
   );
   const order = useSelector(state => store.getAppState(state, "currentOrder"));
   const result = useSelector(state => store.getAppResultByIndex(state, order));
+  const sortedResult = useSelector(state => store.getSortedResult(state));
 
   const onChangeOrder = useCallback(
     (_, value) => {
@@ -125,6 +126,7 @@ const Home = props => {
             color="inherit"
             size="small"
             variant="outlined"
+            disabled={sortedResult.length === 0}
           >
             Result
           </Button>

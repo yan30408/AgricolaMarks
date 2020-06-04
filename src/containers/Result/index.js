@@ -80,7 +80,7 @@ const FullScreenDialog = props => {
   }, []);
   const onClickOkNewGame = useCallback(() => {
     setOpenNewGame(false);
-    if (isSave) {
+    if (isSave && sortedResult.length > 0) {
       d(store.addResult({ date: selectedDate, results: sortedResult }));
     }
     d(
@@ -155,12 +155,12 @@ const FullScreenDialog = props => {
         </ListItem>
       </List>
       <AlertDialog
-        title="Start New Game ?"
+        title={isSave ? "結果を記録します" : "結果を破棄します"}
         isOpen={openNewGame}
         onClose={onCloseNewGame}
         onClickOk={onClickOkNewGame}
       >
-        新しいゲームを始めますか？
+        本当によろしいですか？
       </AlertDialog>
     </Dialog>
   );
