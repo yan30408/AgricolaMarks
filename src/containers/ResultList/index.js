@@ -67,7 +67,9 @@ const ResultList = props => {
   const open = useSelector(state =>
     store.getAppState(state, "isOpenResultList")
   );
-  const dailyResultIds = useSelector(state => store.getDailyResultIds(state));
+  const dailyResultIds = useSelector(state =>
+    store.getSortedDailyResultIds(state)
+  );
   const days = Object.keys(dailyResultIds)
     .sort()
     .reverse();

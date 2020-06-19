@@ -18,6 +18,7 @@ const initialState = {
   isOpenPlayerSelect: false,
   isOpenPlayerList: false,
   isOpenResultList: false,
+  isOpenResultRecord: false,
 
   openResultRecordId: 0
 };

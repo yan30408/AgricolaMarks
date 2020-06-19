@@ -50,6 +50,9 @@ const useStyles = makeStyles(theme => ({
 const ResultRecord = props => {
   const classes = useStyles();
   const d = useDispatch();
+  const open = useSelector(state =>
+    store.getAppState(state, "isOpenResultRecord")
+  );
   const resultId = useSelector(state =>
     store.getAppState(state, "openResultRecordId")
   );
@@ -59,7 +62,7 @@ const ResultRecord = props => {
   const onClose = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        state.openResultRecordId = 0;
+        state.isOpenResultRecord = false;
       })
     );
   }, [d]);
@@ -82,7 +85,7 @@ const ResultRecord = props => {
   return (
     <Dialog
       fullScreen
-      open={resultId !== 0}
+      open={open}
       onClose={onClose}
       TransitionComponent={Transition}
     >

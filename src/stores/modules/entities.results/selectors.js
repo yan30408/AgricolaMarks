@@ -1,5 +1,5 @@
 import { createSelector } from "reselect";
-import { includes } from "lodash";
+import { includes, forEach } from "lodash";
 
 export const getResults = state => {
   return state.entities.results.byId;
@@ -22,5 +22,17 @@ export const getPlayNum = createSelector(
   [getResults, getResultIds, getPropsUid],
   (results, ids, uid) => {
     return ids.filter(id => includes(results[id], uid)).length;
+  }
+);
+
+export const getSortedDailyResultIds = createSelector(
+  [getResults, getDailyResultIds],
+  (results, dailyResultIds) => {
+    forEach(dailyResultIds, (_, key) => {
+      dailyResultIds[key].sort(
+        (a, b) => results[b].date.seconds - results[a].date.seconds
+      );
+    });
+    return dailyResultIds;
   }
 );

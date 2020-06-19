@@ -42,6 +42,7 @@ const ResultListListItem = props => {
   const onSelect = useCallback(() => {
     d(
       store.appStateMutate(state => {
+        state.isOpenResultRecord = true;
         state.openResultRecordId = props.resultId;
       })
     );
