@@ -8,7 +8,7 @@ import {
   Avatar,
   Typography
 } from "@material-ui/core";
-import { Orders } from "Constants";
+import { Orders, Colors } from "Constants";
 
 const ResultListItem = props => {
   const player = useSelector(state => store.getUserById(state, props.uid));
@@ -16,8 +16,7 @@ const ResultListItem = props => {
 
   return (
     <div>
-      {/* <ListItem style={{ backgroundColor: player.color.sub }} divider> */}
-      <ListItem divider>
+      <ListItem style={{ backgroundColor: Colors[props.color]?.sub }} divider>
         <ListItemAvatar>
           <Avatar src={player.photoUrl} />
         </ListItemAvatar>
@@ -27,7 +26,7 @@ const ResultListItem = props => {
               {player.displayName}
             </Typography>
           }
-          // secondary={Orders[player.order]}
+          secondary={Orders[props.order]}
           style={{ flex: 5 }}
         />
         <ListItemText

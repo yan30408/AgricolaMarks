@@ -11,7 +11,7 @@ const Colors = {
   Blue: { main: "#2196F3", sub: "#BBDEFB" },
   Green: { main: "#4CAF50", sub: "#C8E6C9" },
   White: { main: "#FFC107", sub: "#FFECB3" },
-  Pulple: { main: "#9C27B0", sub: "#E1BEE7" }
+  Purple: { main: "#9C27B0", sub: "#E1BEE7" }
 };
 
 export { ScoreByRoomType, Orders, Colors };

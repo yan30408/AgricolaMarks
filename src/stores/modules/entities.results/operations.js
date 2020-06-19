@@ -19,6 +19,21 @@ export const addResult = data => () => {
   });
 };
 
+// const Converter = results => {
+//   return results.map(result => {
+//     return {
+//       ...result,
+//       order: -1,
+//       color: "",
+//     }
+//   })
+// }
+
+// export const updateResult = (id, data) => () => {
+//   if (!data) return null;
+//   return resultsRef.doc(id).update({results: Converter(data)});
+// };
+
 // export const deleteUserHistory = roomId => (dispatch, getState) => {
 //   const uid = getState().app.state.uid;
 //   if (!uid) return null;

@@ -13,6 +13,7 @@ import {
   IconButton,
   List,
   ListItem,
+  ListItemText,
   Toolbar,
   Dialog,
   AppBar,
@@ -24,6 +25,8 @@ import DeleteIcon from "@material-ui/icons/Delete";
 
 import AlertDialog from "components/AlertDialog";
 import ResultRecordListItem from "./ResultRecordListItem";
+
+import { format } from "date-fns";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -51,7 +54,6 @@ const ResultRecord = props => {
     store.getAppState(state, "openResultRecordId")
   );
   const result = useSelector(state => store.getResultById(state, resultId));
-  const open = resultId !== 0;
   const [openDelete, setOpenDelete] = useState(false);
 
   const onClose = useCallback(() => {
@@ -72,6 +74,10 @@ const ResultRecord = props => {
   }, [d]);
 
   if (!result) return;
+  const date = format(
+    new Date(result.date.seconds * 1000 + result.date.nanoseconds / 1000000),
+    "yyyy.MM.dd - HH:mm:ss"
+  );
 
   return (
     <Dialog
@@ -91,8 +97,12 @@ const ResultRecord = props => {
         </Toolbar>
       </AppBar>
       <List>
-        <ListItem divider style={{ justifyContent: "center" }}>
-          <Typography />
+        <ListItem divider>
+          <ListItemText>
+            <Typography variant="h6" align="center">
+              {date}
+            </Typography>
+          </ListItemText>
         </ListItem>
         {result.results.map(result => (
           <ResultRecordListItem key={result.uid} {...result} />

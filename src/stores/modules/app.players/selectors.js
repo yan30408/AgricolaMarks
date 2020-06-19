@@ -16,6 +16,7 @@ export const getAppCurrentPlayerById = (state, uid) => {
   );
 };
 
+// PlayerKey は "Red", "Blue" などの color id
 export const getAppCurrentPlayerKey = (state, uid) => {
   return findKey(
     state.app.players.current,

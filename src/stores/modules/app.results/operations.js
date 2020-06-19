@@ -26,6 +26,8 @@ export const appResultsSetPlayer = (uid, order) => (dispatch, getState) => {
   dispatch(
     appResultsMutate(results => {
       results[order].uid = uid;
+      results[order].order = order;
+      results[order].color = newPlayerKey;
     })
   );
 };
