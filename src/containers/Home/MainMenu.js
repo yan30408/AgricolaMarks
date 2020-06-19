@@ -122,10 +122,7 @@ const MainMenu = props => {
           <ListItemText primary="現在の入力を全て消す" />
         </ListItem>
         <ListItem button onClick={onClickResultList}>
-          <ListItemText
-            primary="結果一覧"
-            secondary={"できてません！鋭意実装中"}
-          />
+          <ListItemText primary="結果一覧" />
           <ListItemIcon>
             <ArrowForwardIcon />
           </ListItemIcon>

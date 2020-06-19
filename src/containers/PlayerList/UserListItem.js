@@ -35,7 +35,7 @@ const UserListItem = props => {
   const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
 
   const onSelect = useCallback(() => {}, []);
-  if (!user) return null;
+  if (!user.displayName) return null;
 
   return (
     <>
@@ -48,9 +48,6 @@ const UserListItem = props => {
           secondary={user.twitterId || createdBy || "Anonymous"}
         />
         <div className={classes.spacer} />
-        <ListItemIcon className={classes.checkMark} ref={anchorEl}>
-          {color ? <CheckIcon /> : <></>}
-        </ListItemIcon>
       </ListItem>
     </>
   );

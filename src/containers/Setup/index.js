@@ -34,7 +34,7 @@ import AlertDialog from "components/AlertDialog";
 import UserListItem from "./UserListItem";
 
 const Transition = forwardRef((props, ref) => {
-  return <Slide direction="right" ref={ref} {...props} />;
+  return <Slide direction="left" ref={ref} {...props} />;
 });
 
 const useStyles = makeStyles(theme => ({

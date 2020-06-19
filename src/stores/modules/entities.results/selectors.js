@@ -13,6 +13,10 @@ export const getResultIds = state => {
   return state.entities.results.allIds || [];
 };
 
+export const getDailyResultIds = state => {
+  return state.entities.results.dailyReducer;
+};
+
 const getPropsUid = (_, props) => props.uid;
 export const getPlayNum = createSelector(
   [getResults, getResultIds, getPropsUid],

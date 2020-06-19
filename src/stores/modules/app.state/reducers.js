@@ -17,7 +17,9 @@ const initialState = {
   isOpenAllClear: false,
   isOpenPlayerSelect: false,
   isOpenPlayerList: false,
-  isOpenResultList: false
+  isOpenResultList: false,
+
+  openResultRecordId: 0
 };
 
 // Reducers
