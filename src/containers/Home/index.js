@@ -23,7 +23,7 @@ import PlayerList from "containers/PlayerList";
 import ResultList from "containers/ResultList";
 import AboutDialog from "containers/AboutDialog";
 import AlertDialog from "components/AlertDialog";
-import { Orders } from "Constants";
+import { Orders, Colors } from "Constants";
 
 import MainMenu from "./MainMenu";
 
@@ -162,9 +162,10 @@ const OrderTab = memo(props => {
   const result = useSelector(state =>
     store.getAppResultByIndex(state, props.value)
   );
-  const color = useSelector(state =>
-    store.getAppCurrentPlayerById(state, result.uid)
-  )?.color.sub;
+  const colorId = useSelector(state =>
+    store.getAppCurrentPlayerKey(state, result.uid)
+  );
+  const color = Colors[colorId]?.sub;
   return (
     <Tab
       {...props}

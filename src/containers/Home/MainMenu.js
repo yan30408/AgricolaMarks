@@ -2,6 +2,7 @@ import React, { memo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
+import { persistor } from "stores";
 import {
   SwipeableDrawer,
   List,
@@ -89,6 +90,10 @@ const MainMenu = props => {
       })
     );
   }, [d]);
+  const onClickClearStorage = useCallback(() => {
+    persistor.purge();
+    window.location.reload();
+  }, []);
 
   return (
     <SwipeableDrawer
@@ -133,8 +138,14 @@ const MainMenu = props => {
             <ArrowForwardIcon />
           </ListItemIcon>
         </ListItem>
-        <ListItem button onClick={onClickAbout}>
+        <ListItem button onClick={onClickAbout} divider>
           <ListItemText primary="このアプリについて" />
+        </ListItem>
+        <ListItem button onClick={onClickClearStorage}>
+          <ListItemText
+            primary="ローカルキャッシュをクリア"
+            secondary="正常に動作しない時に押してください"
+          />
         </ListItem>
         <ListItem button onClick={onClickOldVersion} divider>
           <ListItemText primary="Ver.1(旧バージョン)を使う" />

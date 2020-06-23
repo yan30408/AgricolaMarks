@@ -1,5 +1,21 @@
 export default [
   {
+    version: "2.1.1",
+    date: "2020.6.23",
+    changes: [
+      "プレイヤー設定時に旧データが localStorage に残っているとハングする問題を修正",
+      "LocalStorage のクリアボタンを追加"
+    ]
+  },
+  {
+    version: "2.1.0",
+    date: "2020.6.19",
+    changes: [
+      "戦績の表示ができるようになりました",
+      "プレイヤー一覧の表示ができるようになりました(統計情報は未実装)"
+    ]
+  },
+  {
     version: "2.0.0",
     date: "2020.4.2",
     changes: [

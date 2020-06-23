@@ -26,9 +26,6 @@ const UserListItem = props => {
   const anchorEl = useRef(null);
 
   const user = useSelector(state => store.getUserById(state, props.uid));
-  const color = useSelector(state =>
-    store.getAppCurrentPlayerById(state, props.uid)
-  )?.color.sub;
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;

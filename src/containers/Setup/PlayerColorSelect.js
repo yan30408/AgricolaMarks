@@ -32,16 +32,16 @@ const PlayerColorSelectItem = forwardRef((props, ref) => {
   );
 
   const onSelect = useCallback(() => {
-    d(store.appPlayersSet(player.uid === uid ? null : colorId, user));
+    d(store.appPlayersSet(player?.uid === uid ? null : colorId, user));
     onClose();
-  }, [d, colorId, user, player.uid, uid, onClose]);
+  }, [d, colorId, user, player, uid, onClose]);
 
   const menuLabel = useMemo(() => {
-    if (player.uid) {
+    if (player?.uid) {
       return player.uid === uid ? "登録を解除する" : "プレイヤーを置き換える";
     }
     return "登録する";
-  }, [player.uid, uid]);
+  }, [player, uid]);
 
   return (
     <MenuItem
@@ -53,7 +53,7 @@ const PlayerColorSelectItem = forwardRef((props, ref) => {
     >
       <ListItemText
         primary={menuLabel}
-        secondary={player.name}
+        secondary={player?.name}
         secondaryTypographyProps={{ noWrap: true }}
       />
     </MenuItem>

@@ -5,7 +5,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import { MenuItem, TextField, Grid, Typography } from "@material-ui/core";
 import rsScroller from "react-smooth-scroller";
 
-import { ScoreByRoomType } from "Constants";
+import { ScoreByRoomType, Colors } from "Constants";
 import { fixedButtonData, linearButtonData } from "./data";
 import FixedScoreButton from "./FixedScoreButton";
 import LinearScoreButton from "./LinearScoreButton";
@@ -24,9 +24,9 @@ const CalcForm = props => {
   const validPlayers = useSelector(state => store.getValidPlayers(state));
   const order = useSelector(state => store.getAppState(state, "currentOrder"));
   const result = useSelector(state => store.getAppResultByIndex(state, order));
-  const playerColor = useSelector(state =>
-    store.getAppCurrentPlayerById(state, result.uid)
-  )?.color.sub;
+  const colorId = useSelector(state =>
+    store.getAppCurrentPlayerKey(state, result.uid)
+  );
   const isInvalidPlayer = result.uid === -1;
 
   const onChangePlayer = useCallback(
@@ -65,7 +65,9 @@ const CalcForm = props => {
   }, [d, order, result.uid]);
 
   return (
-    <div style={{ backgroundColor: playerColor, padding: "50px 10px" }}>
+    <div
+      style={{ backgroundColor: Colors[colorId]?.sub, padding: "50px 10px" }}
+    >
       <form className={classes.container} noValidate autoComplete="off">
         <TextField
           select
@@ -85,8 +87,8 @@ const CalcForm = props => {
                 key={player.uid}
                 value={player.uid}
                 style={{
-                  color: player.color.main,
-                  backgroundColor: player.color.sub
+                  color: Colors[player.color]?.main,
+                  backgroundColor: Colors[player.color]?.sub
                 }}
               >
                 <Typography noWrap>{player.name}</Typography>

@@ -2,6 +2,7 @@ import { createStore, combineReducers, applyMiddleware, compose } from "redux";
 import thunk from "redux-thunk";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
+import autoMergeLevel2 from "redux-persist/lib/stateReconciler/autoMergeLevel2";
 
 // app
 import state from "./modules/app.state";
@@ -20,11 +21,13 @@ const appStatePersistConfig = {
 
 const appResultsPersistConfig = {
   key: "store.app.results",
+  stateReconciler: autoMergeLevel2,
   storage
 };
 
 const appPlayersPersistConfig = {
   key: "store.app.players",
+  stateReconciler: autoMergeLevel2,
   storage
 };
 

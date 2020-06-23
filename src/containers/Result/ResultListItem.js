@@ -8,17 +8,20 @@ import {
   Avatar,
   Typography
 } from "@material-ui/core";
-import { Orders } from "Constants";
+import { Orders, Colors } from "Constants";
 
 const ResultListItem = props => {
   const player = useSelector(state =>
     store.getAppCurrentPlayerById(state, props.uid)
   );
+  const colorId = useSelector(state =>
+    store.getAppCurrentPlayerKey(state, props.uid)
+  );
   if (!player) return null;
 
   return (
     <div>
-      <ListItem style={{ backgroundColor: player.color.sub }} divider>
+      <ListItem style={{ backgroundColor: Colors[colorId]?.sub }} divider>
         <ListItemAvatar>
           <Avatar src={player.iconUrl} />
         </ListItemAvatar>

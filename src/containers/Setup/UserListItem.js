@@ -12,6 +12,7 @@ import {
 } from "@material-ui/core";
 import CheckIcon from "@material-ui/icons/Check";
 
+import { Colors } from "Constants";
 import PlayerColorSelect from "./PlayerColorSelect";
 
 const useStyles = makeStyles({
@@ -29,9 +30,10 @@ const UserListItem = props => {
   const anchorEl = useRef(null);
 
   const user = useSelector(state => store.getUserById(state, props.uid));
-  const color = useSelector(state =>
-    store.getAppCurrentPlayerById(state, props.uid)
-  )?.color.sub;
+  const colorId = useSelector(state =>
+    store.getAppCurrentPlayerKey(state, props.uid)
+  );
+  const color = Colors[colorId]?.sub;
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;

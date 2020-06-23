@@ -7,13 +7,13 @@ import { Colors } from "Constants";
 import resultsTypes from "../app.results/types";
 
 const initialState = {
-  current: mapValues(Colors, color => {
+  current: mapValues(Colors, (_, colorId) => {
     return {
       uid: null,
       name: null,
       iconUrl: null,
       order: -1,
-      color
+      color: colorId
     };
   }),
   recent: []
