@@ -17,12 +17,12 @@ const initialState = {
   isOpenAllClear: false,
   isOpenPlayerSelect: false,
   isOpenPlayerList: false,
-  isOpenPlayerStatics: false,
+  isOpenPlayerStatistics: false,
   isOpenResultList: false,
   isOpenResultRecord: false,
 
   openResultRecordId: 0,
-  openPlayerStaticsId: 0
+  openPlayerStatisticsId: 0
 };
 
 // Reducers

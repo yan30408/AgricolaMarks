@@ -33,26 +33,26 @@ const UserListItem = props => {
     store.getUserById(state, user.createdBy)
   )?.twitterId;
   const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
-  const statics = useSelector(state =>
-    store.getUserStaticsById(state, { uid: props.uid })
+  const statistics = useSelector(state =>
+    store.getUserStatisticsById(state, { uid: props.uid })
   );
   const value = useMemo(() => {
-    if (props.staticsType.includes("Num")) {
-      return `${statics[props.staticsType]} 回`;
-    } else if (props.staticsType.includes("average")) {
-      return `${statics[props.staticsType]} pt`;
-    } else if (props.staticsType.includes("Score")) {
-      return `${statics[props.staticsType].score} pt`;
+    if (props.statisticsType.includes("Num")) {
+      return `${statistics[props.statisticsType]} 回`;
+    } else if (props.statisticsType.includes("average")) {
+      return `${statistics[props.statisticsType]} pt`;
+    } else if (props.statisticsType.includes("Score")) {
+      return `${statistics[props.statisticsType].score} pt`;
     } else {
-      return `${statics[props.staticsType]} %`;
+      return `${statistics[props.statisticsType]} %`;
     }
-  }, [props.staticsType, statics]);
+  }, [props.statisticsType, statistics]);
 
   const onSelect = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        state.isOpenPlayerStatics = true;
-        state.openPlayerStaticsId = props.uid;
+        state.isOpenPlayerStatistics = true;
+        state.openPlayerStatisticsId = props.uid;
       })
     );
   }, [d]);
@@ -64,7 +64,7 @@ const UserListItem = props => {
         button
         onClick={onSelect}
         divider
-        style={{ backgroundColor: Colors[statics.favoriteColor]?.sub }}
+        style={{ backgroundColor: Colors[statistics.favoriteColor]?.sub }}
       >
         <ListItemAvatar>
           <Avatar src={user.photoUrl} />

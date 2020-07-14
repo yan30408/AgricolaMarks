@@ -42,8 +42,8 @@ export const getSortedDailyResultIds = createSelector(
   }
 );
 
-const getUserStatics = (results, userlyResultIds, uid) => {
-  let statics = {
+const getUserStatistics = (results, userlyResultIds, uid) => {
+  let statistics = {
     playNum: 0,
     winNum: 0,
     winRate: 0.0,
@@ -70,48 +70,51 @@ const getUserStatics = (results, userlyResultIds, uid) => {
       const date = results[resultId].date;
       totalScore += score;
       if (myRank === 1) {
-        statics.winNum++;
+        statistics.winNum++;
       }
-      if (score > statics.highestScore.score) {
-        statics.highestScore = { score, date };
+      if (score > statistics.highestScore.score) {
+        statistics.highestScore = { score, date };
       }
       if (
-        score < statics.lowestScore.score ||
-        statics.lowestScore.score === 0
+        score < statistics.lowestScore.score ||
+        statistics.lowestScore.score === 0
       ) {
-        statics.lowestScore = { score, date };
+        statistics.lowestScore = { score, date };
       }
-      statics.record.push({ rank: myRank, order: myResult.order, date });
+      statistics.record.push({ rank: myRank, order: myResult.order, date });
       colors[myResult.color]++;
     });
-    statics.playNum = userlyResultIds[uid].length;
-    statics.averageScore = (totalScore / statics.playNum).toFixed(1);
-    statics.winRate = ((statics.winNum / statics.playNum) * 100).toFixed(1);
+    statistics.playNum = userlyResultIds[uid].length;
+    statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
+    statistics.winRate = (
+      (statistics.winNum / statistics.playNum) *
+      100
+    ).toFixed(1);
     let num = 0;
     Object.keys(colors).forEach(key => {
       if (num < colors[key]) {
         num = colors[key];
-        statics.favoriteColor = key;
+        statistics.favoriteColor = key;
       }
     });
   }
-  return statics;
+  return statistics;
 };
 
-export const getUserStaticsById = createSelector(
+export const getUserStatisticsById = createSelector(
   [getResults, getUserlyResultIds, getPropsUid],
   (results, userlyResultIds, uid) => {
-    return getUserStatics(results, userlyResultIds, uid);
+    return getUserStatistics(results, userlyResultIds, uid);
   }
 );
 
-export const getAllUserStatics = createSelector(
+export const getAllUserStatistics = createSelector(
   [getResults, getUserlyResultIds, getUserIds],
   (results, userlyResultIds, uids) => {
-    let allStatics = {};
+    let allStatistics = {};
     uids.forEach(uid => {
-      allStatics[uid] = getUserStatics(results, userlyResultIds, uid);
+      allStatistics[uid] = getUserStatistics(results, userlyResultIds, uid);
     });
-    return allStatics;
+    return allStatistics;
   }
 );

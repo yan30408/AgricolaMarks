@@ -73,7 +73,7 @@ const PlayerList = props => {
   const d = useDispatch();
   const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [staticsType, setStaticsType] = useState("playNum");
+  const [statisticsType, setStatisticsType] = useState("playNum");
   const timer = useRef(null);
 
   const open = useSelector(state =>
@@ -82,25 +82,31 @@ const PlayerList = props => {
   const filteredUserIds = useSelector(state =>
     store.getFiltterdUserIds(state, { searchText })
   );
-  const allStatics = useSelector(state => store.getAllUserStatics(state));
+  const allStatistics = useSelector(state => store.getAllUserStatistics(state));
   const sortedUserIds = useMemo(() => {
-    if (Object.keys(allStatics).length > 0) {
+    if (Object.keys(allStatistics).length > 0) {
       return filteredUserIds
-        .filter(id => allStatics[id])
+        .filter(id => allStatistics[id])
         .sort((a, b) => {
-          if (staticsType === "highestScore" || staticsType === "lowestScore") {
+          if (
+            statisticsType === "highestScore" ||
+            statisticsType === "lowestScore"
+          ) {
             return (
-              allStatics[b][staticsType].score -
-              allStatics[a][staticsType].score
+              allStatistics[b][statisticsType].score -
+              allStatistics[a][statisticsType].score
             );
           } else {
-            return allStatics[b][staticsType] - allStatics[a][staticsType];
+            return (
+              allStatistics[b][statisticsType] -
+              allStatistics[a][statisticsType]
+            );
           }
         });
     } else {
       return filteredUserIds;
     }
-  }, [staticsType, filteredUserIds, allStatics]);
+  }, [statisticsType, filteredUserIds, allStatistics]);
 
   const onClose = useCallback(() => {
     d(
@@ -167,12 +173,12 @@ const PlayerList = props => {
           />
         </ListItem>
         {sortedUserIds.map(uid => (
-          <UserListItem key={uid} uid={uid} staticsType={staticsType} />
+          <UserListItem key={uid} uid={uid} statisticsType={statisticsType} />
         ))}
       </List>
       <BottomNavigation
-        value={staticsType}
-        onChange={(_, value) => setStaticsType(value)}
+        value={statisticsType}
+        onChange={(_, value) => setStatisticsType(value)}
         showLabels
         className={classes.bottomNav}
       >

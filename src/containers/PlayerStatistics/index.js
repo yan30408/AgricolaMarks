@@ -52,22 +52,22 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const PlayerStatics = props => {
+const PlayerStatistics = props => {
   const classes = useStyles();
   const d = useDispatch();
   const open = useSelector(state =>
-    store.getAppState(state, "isOpenPlayerStatics")
+    store.getAppState(state, "isOpenPlayerStatistics")
   );
   const uid = useSelector(state =>
-    store.getAppState(state, "openPlayerStaticsId")
+    store.getAppState(state, "openPlayerStatisticsId")
   );
   const user = useSelector(state => store.getUserById(state, uid));
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;
   const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
-  const statics = useSelector(state =>
-    store.getUserStaticsById(state, { uid: uid })
+  const statistics = useSelector(state =>
+    store.getUserStatisticsById(state, { uid: uid })
   );
 
   const rankLabel = ["1位", "2位", "3位", "4位", "5位"];
@@ -75,13 +75,14 @@ const PlayerStatics = props => {
     return rankLabel.map((label, index) => {
       return {
         label,
-        value: statics.record.filter(value => value.rank === index + 1).length
+        value: statistics.record.filter(value => value.rank === index + 1)
+          .length
       };
     });
-  }, [statics]);
+  }, [statistics]);
   const orderData = useMemo(() => {
     return Orders.map((label, index) => {
-      const target = statics.record.filter(value => value.order === index);
+      const target = statistics.record.filter(value => value.order === index);
       const winRatio =
         target.length > 0
           ? target.filter(value => value.rank === 1).length / target.length
@@ -92,9 +93,9 @@ const PlayerStatics = props => {
         winRatio: (winRatio * 100).toFixed(1)
       };
     });
-  }, [statics]);
+  }, [statistics]);
   const recentData = useMemo(() => {
-    return statics.record
+    return statistics.record
       .sort((a, b) => b.date - a.date)
       .slice(0, 5)
       .map(value => {
@@ -103,12 +104,12 @@ const PlayerStatics = props => {
           rank: value.rank
         };
       });
-  }, [statics]);
+  }, [statistics]);
 
   const onClose = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        state.isOpenPlayerStatics = false;
+        state.isOpenPlayerStatistics = false;
       })
     );
   }, [d]);
@@ -134,12 +135,12 @@ const PlayerStatics = props => {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" color="inherit" className={classes.flex}>
-            Player Statics
+            Player Statistics
           </Typography>
         </Toolbar>
       </AppBar>
       <DialogContent
-        style={{ backgroundColor: Colors[statics.favoriteColor]?.sub }}
+        style={{ backgroundColor: Colors[statistics.favoriteColor]?.sub }}
       >
         <List>
           <ListItem divider>
@@ -157,14 +158,14 @@ const PlayerStatics = props => {
             />
             <div className={classes.spacer} />
             <Typography variant="subtitle2" noWrap>
-              {statics.playNum} 回
+              {statistics.playNum} 回
             </Typography>
           </ListItem>
           <ListItem divider>
             <ListItemText primary={<Typography noWrap>1位率</Typography>} />
             <div className={classes.spacer} />
             <Typography variant="subtitle2" noWrap>
-              {statics.winRate} ％
+              {statistics.winRate} ％
             </Typography>
           </ListItem>
           <ListItem>
@@ -179,7 +180,7 @@ const PlayerStatics = props => {
             >
               <CartesianGrid
                 strokeDasharray="3"
-                stroke={Colors[statics.favoriteColor]?.main}
+                stroke={Colors[statistics.favoriteColor]?.main}
               />
               <XAxis dataKey="label" />
               <YAxis unit="回" allowDecimals={false} />
@@ -202,7 +203,7 @@ const PlayerStatics = props => {
             >
               <CartesianGrid
                 strokeDasharray="3"
-                stroke={Colors[statics.favoriteColor]?.main}
+                stroke={Colors[statistics.favoriteColor]?.main}
                 vertical={false}
               />
 
@@ -213,28 +214,28 @@ const PlayerStatics = props => {
           <ListItem divider>
             <ListItemText
               primary={<Typography noWrap>最高得点</Typography>}
-              secondary={getDate(statics.highestScore.date)}
+              secondary={getDate(statistics.highestScore.date)}
             />
             <div className={classes.spacer} />
             <Typography variant="subtitle2" noWrap>
-              {statics.highestScore.score} 点
+              {statistics.highestScore.score} 点
             </Typography>
           </ListItem>
           <ListItem divider>
             <ListItemText
               primary={<Typography noWrap>最低得点</Typography>}
-              secondary={getDate(statics.lowestScore.date)}
+              secondary={getDate(statistics.lowestScore.date)}
             />
             <div className={classes.spacer} />
             <Typography variant="subtitle2" noWrap>
-              {statics.lowestScore.score} 点
+              {statistics.lowestScore.score} 点
             </Typography>
           </ListItem>
           <ListItem divider>
             <ListItemText primary={<Typography noWrap>平均点</Typography>} />
             <div className={classes.spacer} />
             <Typography variant="subtitle2" noWrap>
-              {statics.averageScore} 点
+              {statistics.averageScore} 点
             </Typography>
           </ListItem>
           <ListItem>
@@ -249,7 +250,7 @@ const PlayerStatics = props => {
             >
               <CartesianGrid
                 strokeDasharray="3"
-                stroke={Colors[statics.favoriteColor]?.main}
+                stroke={Colors[statistics.favoriteColor]?.main}
               />
               <XAxis dataKey="label" />
               <YAxis
@@ -295,9 +296,9 @@ const PlayerStatics = props => {
             <Typography
               variant="subtitle2"
               noWrap
-              style={{ color: Colors[statics.favoriteColor]?.main }}
+              style={{ color: Colors[statistics.favoriteColor]?.main }}
             >
-              {statics.favoriteColor}
+              {statistics.favoriteColor}
             </Typography>
           </ListItem>
         </List>
@@ -306,4 +307,4 @@ const PlayerStatics = props => {
   );
 };
 
-export default memo(PlayerStatics);
+export default memo(PlayerStatistics);

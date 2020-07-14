@@ -32,8 +32,8 @@ const ResultListItem = props => {
   const onSelect = useCallback(() => {
     d(
       store.appStateMutate(state => {
-        state.isOpenPlayerStatics = true;
-        state.openPlayerStaticsId = props.uid;
+        state.isOpenPlayerStatistics = true;
+        state.openPlayerStatisticsId = props.uid;
       })
     );
   }, [d]);
