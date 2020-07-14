@@ -1,5 +1,15 @@
 export default [
   {
+    version: "2.3.0",
+    date: "2020.7.13",
+    changes: ["プレイヤーの統計情報にグラフを追加しました"]
+  },
+  {
+    version: "2.2.0",
+    date: "2020.7.9",
+    changes: ["プレイヤー一覧の統計情報に対応しました"]
+  },
+  {
     version: "2.1.1",
     date: "2020.6.23",
     changes: [

@@ -16,7 +16,7 @@ const useStyles = makeStyles({
   spacer: {
     flexGrow: 1
   },
-  checkMark: {
+  arrowForward: {
     minWidth: 0
   }
 });
@@ -70,7 +70,7 @@ const ResultListListItem = props => {
           }
         />
         <div className={classes.spacer} />
-        <ListItemIcon className={classes.checkMark}>
+        <ListItemIcon className={classes.arrowForward}>
           <ArrowForwardIcon />
         </ListItemIcon>
       </ListItem>

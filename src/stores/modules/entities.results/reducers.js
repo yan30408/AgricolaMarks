@@ -55,8 +55,50 @@ const dailyReducer = enableBatching((state = {}, action) => {
   }
 });
 
+const getUserKeys = action => {
+  return action.data.results.map(result => result.uid);
+};
+
+const userlyReducer = enableBatching((state = {}, action) => {
+  switch (action.type) {
+    case types.INIT: {
+      return {};
+    }
+    case types.REMOVE: {
+      const keys = getUserKeys(action);
+      if (keys) {
+        return produce(state, draft => {
+          keys.forEach(key => delete draft[key]);
+        });
+      }
+      return state;
+    }
+    case types.ADD:
+    case types.UPDATE: {
+      const keys = getUserKeys(action);
+      if (keys) {
+        return produce(state, draft => {
+          keys.forEach(key => {
+            if (!(`${key}` in draft)) {
+              draft[key] = [];
+            }
+            if (!draft[key].includes(action.id)) {
+              draft[key].push(action.id);
+            }
+          });
+        });
+      }
+      return state;
+    }
+    default: {
+      return state;
+    }
+  }
+});
+
 export default combineReducers({
   byId,
   allIds,
-  dailyReducer
+  dailyReducer,
+  userlyReducer
 });

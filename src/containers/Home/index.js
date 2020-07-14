@@ -23,6 +23,7 @@ import PlayerList from "containers/PlayerList";
 import ResultList from "containers/ResultList";
 import AboutDialog from "containers/AboutDialog";
 import AlertDialog from "components/AlertDialog";
+import PlayerStatics from "containers/PlayerStatics";
 import { Orders, Colors } from "Constants";
 
 import MainMenu from "./MainMenu";
@@ -154,6 +155,7 @@ const Home = props => {
       <PlayerList />
       <ResultList />
       <AboutDialog />
+      <PlayerStatics />
     </React.Fragment>
   );
 };

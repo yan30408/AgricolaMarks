@@ -4,11 +4,11 @@ import React, {
   useState,
   forwardRef,
   useRef,
-  useEffect
+  useEffect,
+  useMemo
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { map } from "lodash";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   IconButton,
@@ -20,18 +20,12 @@ import {
   Typography,
   Slide,
   TextField,
-  ListItemAvatar,
-  Avatar,
-  ListItemText,
   InputAdornment,
   BottomNavigation,
-  BottomNavigationAction,
-  Paper
+  BottomNavigationAction
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import RefreshIcon from "@material-ui/icons/Refresh";
 import CancelIcon from "@material-ui/icons/Cancel";
-
 import PlaysIcon from "@material-ui/icons/SportsEsports";
 import WinsIcon from "@material-ui/icons/FormatListNumbered";
 import WinRateIcon from "@material-ui/icons/ThumbUp";
@@ -47,6 +41,9 @@ const Transition = forwardRef((props, ref) => {
 const useStyles = makeStyles(theme => ({
   appBar: {
     position: "sticky"
+  },
+  list: {
+    paddingBottom: "60px"
   },
   bottomNav: {
     position: "fixed",
@@ -76,17 +73,34 @@ const PlayerList = props => {
   const d = useDispatch();
   const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [navigation, setNavigation] = useState("plays");
+  const [staticsType, setStaticsType] = useState("playNum");
   const timer = useRef(null);
 
   const open = useSelector(state =>
     store.getAppState(state, "isOpenPlayerList")
   );
-  const uid = useSelector(state => store.getAppState(state, "uid"));
-  const validPlayers = useSelector(state => store.getValidPlayers(state));
   const filteredUserIds = useSelector(state =>
     store.getFiltterdUserIds(state, { searchText })
   );
+  const allStatics = useSelector(state => store.getAllUserStatics(state));
+  const sortedUserIds = useMemo(() => {
+    if (Object.keys(allStatics).length > 0) {
+      return filteredUserIds
+        .filter(id => allStatics[id])
+        .sort((a, b) => {
+          if (staticsType === "highestScore" || staticsType === "lowestScore") {
+            return (
+              allStatics[b][staticsType].score -
+              allStatics[a][staticsType].score
+            );
+          } else {
+            return allStatics[b][staticsType] - allStatics[a][staticsType];
+          }
+        });
+    } else {
+      return filteredUserIds;
+    }
+  }, [staticsType, filteredUserIds, allStatics]);
 
   const onClose = useCallback(() => {
     d(
@@ -129,7 +143,7 @@ const PlayerList = props => {
           </Typography>
         </Toolbar>
       </AppBar>
-      <List>
+      <List className={classes.list}>
         <ListItem>
           <TextField
             label="プレイヤー名"
@@ -152,25 +166,25 @@ const PlayerList = props => {
             }}
           />
         </ListItem>
-        {filteredUserIds.map(uid => (
-          <UserListItem key={uid} uid={uid} />
+        {sortedUserIds.map(uid => (
+          <UserListItem key={uid} uid={uid} staticsType={staticsType} />
         ))}
       </List>
       <BottomNavigation
-        value={navigation}
-        onChange={(_, value) => setNavigation(value)}
+        value={staticsType}
+        onChange={(_, value) => setStaticsType(value)}
         showLabels
         className={classes.bottomNav}
       >
         　
         <BottomNavigationAction
           label="プレイ"
-          value="plays"
+          value="playNum"
           icon={<PlaysIcon />}
         />
         <BottomNavigationAction
           label="勝ち数"
-          value="wins"
+          value="winNum"
           icon={<WinsIcon />}
         />
         <BottomNavigationAction
@@ -180,7 +194,7 @@ const PlayerList = props => {
         />
         <BottomNavigationAction
           label="スコア"
-          value="scores"
+          value="highestScore"
           icon={<ScoreIcon />}
         />
         <BottomNavigationAction
