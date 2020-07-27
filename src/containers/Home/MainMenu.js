@@ -90,6 +90,13 @@ const MainMenu = props => {
       })
     );
   }, [d]);
+  const onClickStatistics = useCallback(() => {
+    d(
+      store.appStateMutate(state => {
+        state.isOpenStatistics = true;
+      })
+    );
+  }, [d]);
   const onClickClearStorage = useCallback(() => {
     persistor.purge();
     window.location.reload();
@@ -132,8 +139,14 @@ const MainMenu = props => {
             <ArrowForwardIcon />
           </ListItemIcon>
         </ListItem>
-        <ListItem button onClick={onClickPlayerList} divider>
+        <ListItem button onClick={onClickPlayerList}>
           <ListItemText primary="プレイヤー一覧" />
+          <ListItemIcon>
+            <ArrowForwardIcon />
+          </ListItemIcon>
+        </ListItem>
+        <ListItem button onClick={onClickStatistics} divider>
+          <ListItemText primary="統計" />
           <ListItemIcon>
             <ArrowForwardIcon />
           </ListItemIcon>

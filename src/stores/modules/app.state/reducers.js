@@ -20,6 +20,7 @@ const initialState = {
   isOpenPlayerStatistics: false,
   isOpenResultList: false,
   isOpenResultRecord: false,
+  isOpenStatistics: false,
 
   openResultRecordId: 0,
   openPlayerStatisticsId: 0

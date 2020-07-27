@@ -1,5 +1,10 @@
 export default [
   {
+    version: "2.4.0",
+    date: "2020.7.14",
+    changes: ["全体の統計情報を追加しました"]
+  },
+  {
     version: "2.3.0",
     date: "2020.7.13",
     changes: ["プレイヤーの統計情報にグラフを追加しました"]
