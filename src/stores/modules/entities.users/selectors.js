@@ -16,7 +16,12 @@ export const getUsers = state => {
 };
 
 export const getUserById = (state, uid) => {
-  return state.entities.users.byId[uid] || emptyUser;
+  const user = state.entities.users.byId[uid] || emptyUser;
+  if (!user.merged) {
+    return user;
+  } else {
+    return state.entities.users.byId[user.merged] || emptyUser;
+  }
 };
 
 export const getUserIds = state => {
@@ -54,5 +59,13 @@ export const getFiltterdUserIds = createSelector(
         users[id]?.twitterId?.includes(searchText)
       );
     });
+  }
+);
+
+const getPropsUid = (_, props) => props.uid;
+export const getMergedUserIds = createSelector(
+  [getUsers, getUserIds, getPropsUid],
+  (users, ids, uid) => {
+    return ids.filter(id => users[id].merged === uid);
   }
 );

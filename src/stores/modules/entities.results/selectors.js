@@ -1,6 +1,6 @@
 import { createSelector } from "reselect";
 import { includes, forEach } from "lodash";
-import { getUserIds } from "../entities.users/selectors";
+import { getValidUserIds, getMergedUserIds } from "../entities.users/selectors";
 
 export const getResults = state => {
   return state.entities.results.byId;
@@ -42,7 +42,7 @@ export const getSortedDailyResultIds = createSelector(
   }
 );
 
-const getUserStatistics = (results, userlyResultIds, uid) => {
+const getUserStatistics = (results, userlyResultIds, uid, state) => {
   let statistics = {
     playNum: 0,
     winNum: 0,
@@ -53,38 +53,44 @@ const getUserStatistics = (results, userlyResultIds, uid) => {
     favoriteColor: null,
     record: []
   };
-  if (userlyResultIds[uid]) {
-    let totalScore = 0;
-    let colors = { Red: 0, Blue: 0, Green: 0, White: 0, Purple: 0 };
-    userlyResultIds[uid].forEach(resultId => {
-      const myResult = results[resultId].results.find(
-        result => result.uid == uid
-      );
-      let myRank = 1;
-      results[resultId].results.forEach(result => {
-        if (result.score.total > myResult.score.total) {
-          ++myRank;
+  let totalScore = 0;
+  let colors = { Red: 0, Blue: 0, Green: 0, White: 0, Purple: 0 };
+  let uids = getMergedUserIds(state, { uid });
+  uids.push(uid);
+  uids.forEach(uid => {
+    if (userlyResultIds[uid]) {
+      userlyResultIds[uid].forEach(resultId => {
+        const myResult = results[resultId].results.find(
+          result => result.uid == uid
+        );
+        let myRank = 1;
+        results[resultId].results.forEach(result => {
+          if (result.score.total > myResult.score.total) {
+            ++myRank;
+          }
+        });
+        const score = myResult.score.total;
+        const date = results[resultId].date;
+        totalScore += score;
+        if (myRank === 1) {
+          statistics.winNum++;
         }
+        if (score > statistics.highestScore.score) {
+          statistics.highestScore = { score, date };
+        }
+        if (
+          score < statistics.lowestScore.score ||
+          statistics.lowestScore.score === 0
+        ) {
+          statistics.lowestScore = { score, date };
+        }
+        statistics.record.push({ rank: myRank, order: myResult.order, date });
+        colors[myResult.color]++;
       });
-      const score = myResult.score.total;
-      const date = results[resultId].date;
-      totalScore += score;
-      if (myRank === 1) {
-        statistics.winNum++;
-      }
-      if (score > statistics.highestScore.score) {
-        statistics.highestScore = { score, date };
-      }
-      if (
-        score < statistics.lowestScore.score ||
-        statistics.lowestScore.score === 0
-      ) {
-        statistics.lowestScore = { score, date };
-      }
-      statistics.record.push({ rank: myRank, order: myResult.order, date });
-      colors[myResult.color]++;
-    });
-    statistics.playNum = userlyResultIds[uid].length;
+      statistics.playNum += userlyResultIds[uid].length;
+    }
+  });
+  if (userlyResultIds[uid]) {
     statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
     statistics.winRate = (
       (statistics.winNum / statistics.playNum) *
@@ -101,19 +107,25 @@ const getUserStatistics = (results, userlyResultIds, uid) => {
   return statistics;
 };
 
+const getState = state => state;
 export const getUserStatisticsById = createSelector(
-  [getResults, getUserlyResultIds, getPropsUid],
-  (results, userlyResultIds, uid) => {
-    return getUserStatistics(results, userlyResultIds, uid);
+  [getResults, getUserlyResultIds, getPropsUid, getState],
+  (results, userlyResultIds, uid, state) => {
+    return getUserStatistics(results, userlyResultIds, uid, state);
   }
 );
 
 export const getAllUserStatistics = createSelector(
-  [getResults, getUserlyResultIds, getUserIds],
-  (results, userlyResultIds, uids) => {
+  [getResults, getUserlyResultIds, getValidUserIds, getState],
+  (results, userlyResultIds, uids, state) => {
     let allStatistics = {};
     uids.forEach(uid => {
-      allStatistics[uid] = getUserStatistics(results, userlyResultIds, uid);
+      allStatistics[uid] = getUserStatistics(
+        results,
+        userlyResultIds,
+        uid,
+        state
+      );
     });
     return allStatistics;
   }

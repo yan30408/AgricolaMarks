@@ -1,4 +1,4 @@
-import React, { memo, useCallback, forwardRef, useMemo } from "react";
+import React, { memo, useCallback, forwardRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
@@ -8,6 +8,7 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
+  ListItemSecondaryAction,
   Avatar,
   Toolbar,
   Dialog,
@@ -17,16 +18,16 @@ import {
   Slide
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
+import MergeIcon from "@material-ui/icons/PeopleAlt";
 
 import { Colors, Orders } from "Constants";
+import AlertDialog from "components/AlertDialog";
 
 import { format } from "date-fns";
 import {
   BarChart,
   Bar,
   Tooltip,
-  Legend,
-  Label,
   LabelList,
   ComposedChart,
   LineChart,
@@ -69,6 +70,10 @@ const PlayerStatistics = props => {
   const statistics = useSelector(state =>
     store.getUserStatisticsById(state, { uid: uid })
   );
+  const myUid = useSelector(state => store.getAppState(state, "uid"));
+  const isAnonymous = useSelector(state =>
+    store.getAppState(state, "isAnonymous")
+  );
 
   const rankLabel = ["1位", "2位", "3位", "4位", "5位"];
   const rankData = useMemo(() => {
@@ -103,7 +108,8 @@ const PlayerStatistics = props => {
           label: rankLabel[value.rank - 1],
           rank: value.rank
         };
-      });
+      })
+      .reverse();
   }, [statistics]);
 
   const onClose = useCallback(() => {
@@ -113,6 +119,23 @@ const PlayerStatistics = props => {
       })
     );
   }, [d]);
+
+  const [openMerge, setOpenMerge] = useState(false);
+  const onClickMerge = useCallback(() => {
+    setOpenMerge(true);
+  }, []);
+  const onMergeCancel = useCallback(() => {
+    setOpenMerge(false);
+  }, []);
+  const onMergeOK = useCallback(() => {
+    setOpenMerge(false);
+    d(store.updateUser(uid, { merged: myUid }));
+    d(
+      store.appStateMutate(state => {
+        state.openPlayerStatisticsId = myUid;
+      })
+    );
+  }, [uid, myUid]);
 
   const getDate = date => {
     if (!date) return null;
@@ -151,6 +174,13 @@ const PlayerStatistics = props => {
               primary={<Typography noWrap>{user.displayName}</Typography>}
               secondary={user.twitterId || createdBy || "Anonymous"}
             />
+            {createdBy && !isAnonymous ? (
+              <ListItemSecondaryAction>
+                <IconButton edge="end" onClick={onClickMerge}>
+                  <MergeIcon />
+                </IconButton>
+              </ListItemSecondaryAction>
+            ) : null}
           </ListItem>
           <ListItem divider>
             <ListItemText
@@ -303,6 +333,16 @@ const PlayerStatistics = props => {
           </ListItem>
         </List>
       </DialogContent>
+      <AlertDialog
+        title={"ユーザーを統合します"}
+        isOpen={openMerge}
+        onClose={onMergeCancel}
+        onClickOk={onMergeOK}
+      >
+        このユーザーを現在のアカウントと統合します。
+        <br />
+        本当によろしいですか？
+      </AlertDialog>
     </Dialog>
   );
 };

@@ -21,23 +21,23 @@ const useStyles = makeStyles({
   }
 });
 
+const PlayerName = props => {
+  const user = useSelector(state => store.getUserById(state, props.uid));
+  return (
+    <>
+      {props.index !== 0 ? ", " : ""}
+      {user.displayName || "Anonymous"}
+    </>
+  );
+};
+
 const ResultListListItem = props => {
   const classes = useStyles();
   const d = useDispatch();
 
-  const users = useSelector(state => store.getUsers(state));
   const result = useSelector(state =>
     store.getResultById(state, props.resultId)
   );
-  const playerNames = useMemo(() => {
-    return result.results.reduce((acc, player) => {
-      return (
-        acc +
-        (acc.length > 0 ? ", " : "") +
-        (users[player.uid]?.displayName || "Anonymous")
-      );
-    }, "");
-  }, [users, result]);
 
   const onSelect = useCallback(() => {
     d(
@@ -65,7 +65,9 @@ const ResultListListItem = props => {
               variant="caption"
               color="textSecondary"
             >
-              {playerNames}
+              {result.results.map((player, index) => (
+                <PlayerName uid={player.uid} index={index} />
+              ))}
             </Typography>
           }
         />

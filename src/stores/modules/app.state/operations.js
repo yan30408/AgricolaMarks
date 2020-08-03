@@ -28,7 +28,7 @@ export const subscribeUserState = () => (dispatch, _) => {
       dispatch(
         appStateMutate(draft => {
           draft.uid = null;
-          draft.isAnonymous = null;
+          draft.isAnonymous = true;
         })
       );
     }
