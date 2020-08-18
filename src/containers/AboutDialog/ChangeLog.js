@@ -1,5 +1,15 @@
 export default [
   {
+    version: "2.5.2",
+    date: "2020.8.17",
+    changes: ["結果一覧が手番順になっていたので修正しました"]
+  },
+  {
+    version: "2.5.1",
+    date: "2020.8.3",
+    changes: ["Twitter ID ログインをリダイレクト方式に変更しました"]
+  },
+  {
     version: "2.5.0",
     date: "2020.7.29",
     changes: ["ユーザーの統合機能を追加しました"]

@@ -107,9 +107,11 @@ const ResultRecord = props => {
             </Typography>
           </ListItemText>
         </ListItem>
-        {result.results.map(result => (
-          <ResultRecordListItem key={result.uid} {...result} />
-        ))}
+        {result.results
+          .sort((a, b) => b.score.total - a.score.total)
+          .map(result => (
+            <ResultRecordListItem key={result.uid} {...result} />
+          ))}
         <ListItem>
           <Button
             color="secondary"
