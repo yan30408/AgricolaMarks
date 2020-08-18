@@ -74,7 +74,7 @@ const UserListItem = props => {
           secondary={user.twitterId || createdBy || "Anonymous"}
         />
         <div className={classes.spacer} />
-        <Typography variant="subtitle2" noWrap>
+        <Typography variant="subtitle2" noWrap style={{ minWidth: "46px" }}>
           {value}
         </Typography>
         <ListItemIcon className={classes.arrowForward}>

@@ -90,7 +90,7 @@ const getUserStatistics = (results, userlyResultIds, uid, state) => {
       statistics.playNum += userlyResultIds[uid].length;
     }
   });
-  if (userlyResultIds[uid]) {
+  if (statistics.playNum > 0) {
     statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
     statistics.winRate = (
       (statistics.winNum / statistics.playNum) *

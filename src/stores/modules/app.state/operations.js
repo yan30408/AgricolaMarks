@@ -1,28 +1,33 @@
 import actions from "./actions";
 import { auth, providers } from "initializer";
-import { getUserById } from "../entities.users/selectors";
-import { createUser, updateUser } from "../entities.users/operations";
+import { saveUser } from "../entities.users/operations";
 
 export const appStateMutate = actions.appStateMutate;
 
 export const subscribeUserState = () => (dispatch, _) => {
-  return auth.onAuthStateChanged(function(user) {
+  const unsubscribe = auth.onAuthStateChanged(function(user) {
     if (user) {
       // User is signed in.
       const uid = user.uid;
-      const displayName = user.displayName;
+      // const displayName = user.displayName;
       // var email = user.email;
       // var emailVerified = user.emailVerified;
-      const photoUrl = user.photoURL;
+      // const photoUrl = user.photoURL;
       const isAnonymous = user.isAnonymous;
-      // var providerData = user.providerData;
+      const providerData = user.providerData;
+      if (providerData[0]?.displayName) {
+        user.updateProfile({
+          displayName: providerData[0].displayName,
+          photoURL: providerData[0].photoURL
+        });
+      }
       dispatch(
         appStateMutate(draft => {
           draft.uid = uid;
           draft.isAnonymous = isAnonymous;
         })
       );
-      dispatch(updateUser(uid, { displayName, photoUrl }));
+      getRedirectResult(dispatch);
     } else {
       auth.signInAnonymously(); // force login
       dispatch(
@@ -33,27 +38,32 @@ export const subscribeUserState = () => (dispatch, _) => {
       );
     }
   });
+  return () => unsubscribe();
 };
 
-export const signInWithTwitter = () => async (dispatch, getState) => {
-  const result = await auth.signInWithPopup(providers.twitter);
-  if (result.user && result.user.providerData[0]) {
-    const state = getState();
-    const user = getUserById(state, result.user.uid);
-    if (user.displayName === null) {
-      dispatch(
-        createUser({
-          uid: result.user.uid,
-          displayName: result.user.providerData[0].displayName,
-          photoUrl: result.user.providerData[0].photoURL,
-          twitterId: result.additionalUserInfo.username
-        })
-      );
-    }
+const getRedirectResult = async dispatch => {
+  const result = await auth.getRedirectResult();
+  if (result && result.user && result.user.providerData[0]) {
+    dispatch(
+      saveUser({
+        uid: result.user.uid,
+        displayName: result.user.providerData[0].displayName,
+        photoUrl: result.user.providerData[0].photoURL,
+        twitterId: result.additionalUserInfo.username
+      })
+    );
+  }
+};
+
+export const signInWithTwitter = () => async () => {
+  const result = await auth.getRedirectResult();
+  if (result && result.user && result.user.providerData[0]) {
     result.user.updateProfile({
       displayName: result.user.providerData[0].displayName,
       photoURL: result.user.providerData[0].photoURL
     });
+  } else {
+    auth.signInWithRedirect(providers.twitter);
   }
 };
 

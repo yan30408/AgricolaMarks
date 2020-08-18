@@ -12,13 +12,26 @@ export const subscribeUsers = createSubscribeCollection(
   (_, state) => usersRef
 );
 
-export const createUser = data => () => {
+// Create or Update
+export const saveUser = data => () => {
   if (!data) return null;
-  return usersRef.doc(data.uid).set({
-    ...UserRecord(data),
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  });
+  return usersRef
+    .doc(data.uid)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        return usersRef.doc(data.uid).update({
+          ...data,
+          updatedAt: Date.now()
+        });
+      } else {
+        return usersRef.doc(data.uid).set({
+          ...UserRecord(data),
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      }
+    });
 };
 
 export const addUser = data => (dispatch, _) => {
