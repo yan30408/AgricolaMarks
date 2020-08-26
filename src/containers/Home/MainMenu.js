@@ -56,8 +56,10 @@ const MainMenu = props => {
       store.appStateMutate(state => {
         state.isOpenMenu = false;
         state.isOpenSetup = true;
+        state.currentOrder = 0;
       })
     );
+    d(store.appResultsInit);
   }, [d]);
   const onClickAllClear = useCallback(() => {
     d(

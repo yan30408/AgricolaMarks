@@ -5,6 +5,7 @@ import produce from "immer";
 import { mapValues, find, uniq, forEach } from "lodash";
 import { Colors } from "Constants";
 import resultsTypes from "../app.results/types";
+import { getUserById } from "../entities.users/selectors";
 
 const initialState = {
   current: mapValues(Colors, (_, colorId) => {
@@ -35,6 +36,18 @@ const appPlayersReducer = (state = initialState, action) => {
         return draft;
       });
     }
+    case types.APP_PLAYERS_UPDATE: {
+      return produce(state, draft => {
+        forEach(draft.current, player => {
+          const user = getUserById(action.state, player.uid);
+          if (user.displayName) {
+            player.name = user.displayName;
+            player.iconUrl = user.photoUrl;
+          }
+        });
+        return draft;
+      });
+    }
     case types.APP_PLAYERS_SET: {
       return produce(state, draft => {
         const user = action.user;
@@ -46,12 +59,14 @@ const appPlayersReducer = (state = initialState, action) => {
           prestate.uid = null;
           prestate.name = null;
           prestate.iconUrl = null;
+          prestate.order = -1;
         }
         if (action.cid in draft.current) {
           const player = draft.current[action.cid];
           player.uid = user._id;
           player.name = user.displayName;
           player.iconUrl = user.photoUrl;
+          player.order = -1;
         }
         return draft;
       });

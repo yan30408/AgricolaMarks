@@ -29,7 +29,7 @@ export const subscribeUserState = () => (dispatch, _) => {
       );
       getRedirectResult(dispatch);
     } else {
-      auth.signInAnonymously(); // force login
+      //auth.signInAnonymously(); // force login
       dispatch(
         appStateMutate(draft => {
           draft.uid = null;

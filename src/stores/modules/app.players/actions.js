@@ -8,6 +8,12 @@ const actions = {
     };
   },
   appPlayersInit: { type: types.APP_PLAYERS_INIT },
+  appPlayersUpdate: state => {
+    return {
+      type: types.APP_PLAYERS_UPDATE,
+      state
+    };
+  },
   appPlayersSet: (cid, user) => {
     return {
       type: types.APP_PLAYERS_SET,

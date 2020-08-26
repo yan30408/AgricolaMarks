@@ -97,6 +97,7 @@ const FullScreenDialog = props => {
 
   useEffect(() => {
     setSelectedDate(new Date());
+    d(store.appPlayersUpdate());
   }, [open]);
 
   return (

@@ -3,7 +3,10 @@ import { db, FieldValue } from "initializer";
 //import sendEvent from "modules/sendEvent";
 import { createSubscribeCollection } from "../firestoreModuleUtils";
 import { UserRecord } from "./records";
-import { appPlayersUpdateRecent } from "../app.players/operations";
+import {
+  appPlayersUpdate,
+  appPlayersUpdateRecent
+} from "../app.players/operations";
 
 const usersRef = db.collection("users");
 
@@ -13,17 +16,22 @@ export const subscribeUsers = createSubscribeCollection(
 );
 
 // Create or Update
-export const saveUser = data => () => {
+export const saveUser = data => (dispatch, _) => {
   if (!data) return null;
   return usersRef
     .doc(data.uid)
     .get()
     .then(doc => {
       if (doc.exists) {
-        return usersRef.doc(data.uid).update({
-          ...data,
-          updatedAt: Date.now()
-        });
+        return usersRef
+          .doc(data.uid)
+          .update({
+            ...data,
+            updatedAt: Date.now()
+          })
+          .then(docRef => {
+            dispatch(appPlayersUpdate());
+          });
       } else {
         return usersRef.doc(data.uid).set({
           ...UserRecord(data),
@@ -43,6 +51,7 @@ export const addUser = data => (dispatch, _) => {
       updatedAt: Date.now()
     })
     .then(docRef => {
+      // 手動で追加したプレイヤーはリストの上の方に来てほしいので
       dispatch(appPlayersUpdateRecent([docRef.id]));
     });
 };
