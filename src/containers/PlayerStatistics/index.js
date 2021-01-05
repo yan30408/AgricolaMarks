@@ -66,7 +66,9 @@ const PlayerStatistics = props => {
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;
-  const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
+  const createdBy = createdByTwitterId
+    ? `registered by ${createdByTwitterId}`
+    : null;
   const statistics = useSelector(state =>
     store.getUserStatisticsById(state, { uid: uid })
   );
@@ -192,11 +194,17 @@ const PlayerStatistics = props => {
             </Typography>
           </ListItem>
           <ListItem divider>
-            <ListItemText primary={<Typography noWrap>1位率</Typography>} />
+            <ListItemText primary={<Typography noWrap>勝率</Typography>} />
             <div className={classes.spacer} />
-            <Typography variant="subtitle2" noWrap>
-              {statistics.winRate} ％
-            </Typography>
+            {statistics.winRate === -1 ? (
+              <Typography variant="subtitle2" noWrap>
+                プレイ数が足りません
+              </Typography>
+            ) : (
+              <Typography variant="subtitle2" noWrap>
+                {statistics.winRate} ％
+              </Typography>
+            )}
           </ListItem>
           <ListItem>
             <ListItemText primary={<Typography noWrap>順位分布</Typography>} />
@@ -264,9 +272,15 @@ const PlayerStatistics = props => {
           <ListItem divider>
             <ListItemText primary={<Typography noWrap>平均点</Typography>} />
             <div className={classes.spacer} />
-            <Typography variant="subtitle2" noWrap>
-              {statistics.averageScore} 点
-            </Typography>
+            {statistics.averageScore === -1 ? (
+              <Typography variant="subtitle2" noWrap>
+                プレイ数が足りません
+              </Typography>
+            ) : (
+              <Typography variant="subtitle2" noWrap>
+                {statistics.averageScore} 点
+              </Typography>
+            )}
           </ListItem>
           <ListItem>
             <ListItemText primary={<Typography noWrap>手番分布</Typography>} />

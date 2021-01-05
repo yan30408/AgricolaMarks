@@ -31,6 +31,7 @@ import WinsIcon from "@material-ui/icons/FormatListNumbered";
 import WinRateIcon from "@material-ui/icons/ThumbUp";
 import ScoreIcon from "@material-ui/icons/Grade";
 import ScoreAveIcon from "@material-ui/icons/TrendingUp";
+import BakushiIcon from "@material-ui/icons/FlashOn";
 
 import UserListItem from "./UserListItem";
 
@@ -88,14 +89,22 @@ const PlayerList = props => {
       return filteredUserIds
         .filter(id => allStatistics[id])
         .sort((a, b) => {
-          if (
-            statisticsType === "highestScore" ||
-            statisticsType === "lowestScore"
-          ) {
+          if (statisticsType === "highestScore") {
             return (
               allStatistics[b][statisticsType].score -
               allStatistics[a][statisticsType].score
             );
+          } else if (statisticsType === "lowestScore") {
+            if (allStatistics[a]["playNum"] === 0) {
+              return 1;
+            } else if (allStatistics[b]["playNum"] === 0) {
+              return -1;
+            } else {
+              return (
+                allStatistics[a][statisticsType].score -
+                allStatistics[b][statisticsType].score
+              );
+            }
           } else {
             return (
               allStatistics[b][statisticsType] -
@@ -182,16 +191,10 @@ const PlayerList = props => {
         showLabels
         className={classes.bottomNav}
       >
-        　
         <BottomNavigationAction
           label="プレイ"
           value="playNum"
           icon={<PlaysIcon />}
-        />
-        <BottomNavigationAction
-          label="勝ち数"
-          value="winNum"
-          icon={<WinsIcon />}
         />
         <BottomNavigationAction
           label="勝率"
@@ -199,14 +202,19 @@ const PlayerList = props => {
           icon={<WinRateIcon />}
         />
         <BottomNavigationAction
-          label="スコア"
+          label="平均点"
+          value="averageScore"
+          icon={<ScoreAveIcon />}
+        />
+        <BottomNavigationAction
+          label="高得点"
           value="highestScore"
           icon={<ScoreIcon />}
         />
         <BottomNavigationAction
-          label="平均点"
-          value="averageScore"
-          icon={<ScoreAveIcon />}
+          label="爆死"
+          value="lowestScore"
+          icon={<BakushiIcon />}
         />
       </BottomNavigation>
     </Dialog>

@@ -37,7 +37,9 @@ const UserListItem = props => {
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;
-  const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
+  const createdBy = createdByTwitterId
+    ? `registered by ${createdByTwitterId}`
+    : null;
 
   const onSelect = useCallback(() => {
     setOpenColorSelect(true);

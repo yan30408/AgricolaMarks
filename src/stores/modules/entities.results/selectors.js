@@ -45,17 +45,18 @@ export const getSortedDailyResultIds = createSelector(
 const getUserStatistics = (results, userlyResultIds, uid, state) => {
   let statistics = {
     playNum: 0,
-    winNum: 0,
-    winRate: 0.0,
+    winRate: -1,
     highestScore: { score: 0 },
     lowestScore: { score: 0 },
-    averageScore: 0.0,
+    averageScore: -1,
     favoriteColor: null,
     record: []
   };
   let totalScore = 0;
   let colors = { Red: 0, Blue: 0, Green: 0, White: 0, Purple: 0 };
   let uids = getMergedUserIds(state, { uid });
+  let numWin = 0;
+  let numLose = 0;
   uids.push(uid);
   uids.forEach(uid => {
     if (userlyResultIds[uid]) {
@@ -72,9 +73,6 @@ const getUserStatistics = (results, userlyResultIds, uid, state) => {
         const score = myResult.score.total;
         const date = results[resultId].date;
         totalScore += score;
-        if (myRank === 1) {
-          statistics.winNum++;
-        }
         if (score > statistics.highestScore.score) {
           statistics.highestScore = { score, date };
         }
@@ -85,17 +83,14 @@ const getUserStatistics = (results, userlyResultIds, uid, state) => {
           statistics.lowestScore = { score, date };
         }
         statistics.record.push({ rank: myRank, order: myResult.order, date });
+        numWin += 5 - myRank;
+        numLose += myRank - 1;
         colors[myResult.color]++;
       });
       statistics.playNum += userlyResultIds[uid].length;
     }
   });
   if (statistics.playNum > 0) {
-    statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
-    statistics.winRate = (
-      (statistics.winNum / statistics.playNum) *
-      100
-    ).toFixed(1);
     let num = 0;
     Object.keys(colors).forEach(key => {
       if (num < colors[key]) {
@@ -103,6 +98,11 @@ const getUserStatistics = (results, userlyResultIds, uid, state) => {
         statistics.favoriteColor = key;
       }
     });
+    // ある程度プレイしてない人はここで弾く
+    if (statistics.playNum >= 10) {
+      statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
+      statistics.winRate = ((numWin / (numWin + numLose)) * 100).toFixed(1);
+    }
   }
   return statistics;
 };

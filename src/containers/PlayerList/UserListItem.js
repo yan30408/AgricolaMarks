@@ -32,19 +32,22 @@ const UserListItem = props => {
   const createdByTwitterId = useSelector(state =>
     store.getUserById(state, user.createdBy)
   )?.twitterId;
-  const createdBy = createdByTwitterId ? `made by ${createdByTwitterId}` : null;
+  const createdBy = createdByTwitterId
+    ? `registered by ${createdByTwitterId}`
+    : null;
   const statistics = useSelector(state =>
     store.getUserStatisticsById(state, { uid: props.uid })
   );
   const value = useMemo(() => {
+    const stat = statistics[props.statisticsType];
     if (props.statisticsType.includes("Num")) {
-      return `${statistics[props.statisticsType]} 回`;
+      return `${stat} 回`;
     } else if (props.statisticsType.includes("average")) {
-      return `${statistics[props.statisticsType]} pt`;
+      return stat === -1 ? "-" : `${stat} pt`;
     } else if (props.statisticsType.includes("Score")) {
-      return `${statistics[props.statisticsType].score} pt`;
+      return `${stat.score} pt`;
     } else {
-      return `${statistics[props.statisticsType]} %`;
+      return stat === -1 ? "-" : `${stat} %`;
     }
   }, [props.statisticsType, statistics]);
 
