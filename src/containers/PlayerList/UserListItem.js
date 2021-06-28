@@ -70,7 +70,13 @@ const UserListItem = props => {
         style={{ backgroundColor: Colors[statistics.favoriteColor]?.sub }}
       >
         <ListItemAvatar>
-          <Avatar src={user.photoUrl} />
+          <Avatar
+            src={user.photoUrl}
+            alt={user.displayName}
+            style={{ backgroundColor: Colors[statistics.favoriteColor]?.main }}
+          >
+            {user.displayName.substr(0, 1)}
+          </Avatar>
         </ListItemAvatar>
         <ListItemText
           primary={<Typography noWrap>{user.displayName}</Typography>}

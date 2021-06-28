@@ -23,7 +23,13 @@ const ResultListItem = props => {
     <div>
       <ListItem style={{ backgroundColor: Colors[colorId]?.sub }} divider>
         <ListItemAvatar>
-          <Avatar src={player.iconUrl} />
+          <Avatar
+            src={player.iconUrl}
+            alt={player.name}
+            style={{ backgroundColor: Colors[colorId]?.main }}
+          >
+            {player.name?.substr(0, 1)}
+          </Avatar>
         </ListItemAvatar>
         <ListItemText
           primary={

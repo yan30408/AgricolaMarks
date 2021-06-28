@@ -49,7 +49,13 @@ const ResultListItem = props => {
         divider
       >
         <ListItemAvatar>
-          <Avatar src={player.photoUrl} />
+          <Avatar
+            src={player.photoUrl}
+            alt={player.displayName}
+            style={{ backgroundColor: Colors[props.color]?.main }}
+          >
+            {player.displayName?.substr(0, 1)}
+          </Avatar>
         </ListItemAvatar>
         <ListItemText
           primary={

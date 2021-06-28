@@ -58,7 +58,13 @@ const UserListItem = props => {
         divider
       >
         <ListItemAvatar>
-          <Avatar src={user.photoUrl} />
+          <Avatar
+            src={user.photoUrl}
+            alt={user.displayName}
+            style={{ backgroundColor: Colors[colorId]?.main }}
+          >
+            {user.displayName?.substr(0, 1)}
+          </Avatar>
         </ListItemAvatar>
         <ListItemText
           primary={<Typography noWrap>{user.displayName}</Typography>}
