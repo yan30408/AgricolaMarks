@@ -82,7 +82,12 @@ const getUserStatistics = (results, userlyResultIds, uid, state) => {
         ) {
           statistics.lowestScore = { score, date };
         }
-        statistics.record.push({ rank: myRank, order: myResult.order, date });
+        statistics.record.push({
+          id: resultId,
+          rank: myRank,
+          order: myResult.order,
+          date
+        });
         numWin += 5 - myRank;
         numLose += myRank - 1;
         colors[myResult.color]++;

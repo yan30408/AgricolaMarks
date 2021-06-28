@@ -23,7 +23,6 @@ import PlayerList from "containers/PlayerList";
 import ResultList from "containers/ResultList";
 import AboutDialog from "containers/AboutDialog";
 import AlertDialog from "components/AlertDialog";
-import PlayerStatistics from "containers/PlayerStatistics";
 import Statistics from "containers/Statistics";
 import { Orders, Colors } from "Constants";
 
@@ -157,7 +156,6 @@ const Home = props => {
       <ResultList />
       <AboutDialog />
       <Statistics />
-      <PlayerStatistics />
     </React.Fragment>
   );
 };

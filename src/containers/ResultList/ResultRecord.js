@@ -1,11 +1,5 @@
-import React, {
-  memo,
-  useState,
-  useCallback,
-  forwardRef,
-  useEffect
-} from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { memo, useState, useCallback, forwardRef } from "react";
+import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -23,8 +17,8 @@ import {
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
 import DeleteIcon from "@material-ui/icons/Delete";
 
-import AlertDialog from "components/AlertDialog";
 import ResultRecordListItem from "./ResultRecordListItem";
+import PlayerStatistics from "containers/PlayerStatistics";
 
 import { format } from "date-fns";
 
@@ -49,32 +43,18 @@ const useStyles = makeStyles(theme => ({
 
 const ResultRecord = props => {
   const classes = useStyles();
-  const d = useDispatch();
-  const open = useSelector(state =>
-    store.getAppState(state, "isOpenResultRecord")
-  );
-  const resultId = useSelector(state =>
-    store.getAppState(state, "openResultRecordId")
-  );
+  const { open, resultId } = props;
   const result = useSelector(state => store.getResultById(state, resultId));
-  const [openDelete, setOpenDelete] = useState(false);
+  const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
+  const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
 
-  const onClose = useCallback(() => {
-    d(
-      store.appStateMutate(state => {
-        state.isOpenResultRecord = false;
-      })
-    );
-  }, [d]);
-  const onClickDelete = useCallback(() => {
-    setOpenDelete(true);
+  const onSelect = useCallback(id => {
+    setIsOpenPlayerStatistics(true);
+    setIsOpenPlayerStatisticsId(id);
   }, []);
-  const onCloseDelete = useCallback(() => {
-    setOpenDelete(false);
+  const onDeselect = useCallback(id => {
+    setIsOpenPlayerStatistics(false);
   }, []);
-  const onClickOkDelete = useCallback(() => {
-    setOpenDelete(false);
-  }, [d]);
 
   if (!result) return;
   const date = format(
@@ -83,56 +63,58 @@ const ResultRecord = props => {
   );
 
   return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      TransitionComponent={Transition}
-    >
-      <AppBar className={classes.appBar}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={onClose} aria-label="Close">
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" color="inherit" className={classes.flex}>
-            Result
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <List>
-        <ListItem divider>
-          <ListItemText>
-            <Typography variant="h6" align="center">
-              {date}
-            </Typography>
-          </ListItemText>
-        </ListItem>
-        {result.results
-          .sort((a, b) => b.score.total - a.score.total)
-          .map(result => (
-            <ResultRecordListItem key={result.uid} {...result} />
-          ))}
-        <ListItem>
-          <Button
-            color="secondary"
-            onClick={onClickDelete}
-            fullWidth
-            variant="contained"
-          >
-            記録を削除する
-            <DeleteIcon className={classes.rightIcon} />
-          </Button>
-        </ListItem>
-      </List>
-      <AlertDialog
-        title={"記録を削除します"}
-        isOpen={openDelete}
-        onClose={onCloseDelete}
-        onClickOk={onClickOkDelete}
+    <>
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={props.onClose}
+        TransitionComponent={Transition}
       >
-        本当によろしいですか？
-      </AlertDialog>
-    </Dialog>
+        <AppBar className={classes.appBar}>
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              onClick={props.onClose}
+              aria-label="Close"
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" color="inherit" className={classes.flex}>
+              Result
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <List>
+          <ListItem divider>
+            <ListItemText>
+              <Typography variant="h6" align="center">
+                {date}
+              </Typography>
+            </ListItemText>
+          </ListItem>
+          {result.results
+            .sort((a, b) => b.score.total - a.score.total)
+            .map(result => (
+              <ResultRecordListItem
+                key={result.uid}
+                {...result}
+                onSelect={onSelect}
+              />
+            ))}
+          <ListItem>
+            <Button color="secondary" fullWidth variant="contained" disabled>
+              記録を削除する
+              <DeleteIcon className={classes.rightIcon} />
+            </Button>
+          </ListItem>
+        </List>
+      </Dialog>
+      <PlayerStatistics
+        open={isOpenPlayerStatistics}
+        uid={isOpenPlayerStatisticsId}
+        onClose={onDeselect}
+      />
+    </>
   );
 };
 

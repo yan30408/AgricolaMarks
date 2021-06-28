@@ -1,43 +1,18 @@
-import React, {
-  memo,
-  useCallback,
-  useState,
-  forwardRef,
-  useRef,
-  useEffect
-} from "react";
+import React, { memo, useCallback, useState, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { map } from "lodash";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   IconButton,
   List,
-  ListItem,
   Dialog,
   Toolbar,
   AppBar,
   Typography,
   Slide,
-  TextField,
-  ListItemAvatar,
-  Avatar,
-  ListItemText,
-  InputAdornment,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
   ListSubheader
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import CancelIcon from "@material-ui/icons/Cancel";
-
-import PlaysIcon from "@material-ui/icons/SportsEsports";
-import WinsIcon from "@material-ui/icons/FormatListNumbered";
-import WinRateIcon from "@material-ui/icons/ThumbUp";
-import ScoreIcon from "@material-ui/icons/Grade";
-import ScoreAveIcon from "@material-ui/icons/TrendingUp";
 
 import ResultListListItem from "./ResultListListItem";
 import ResultRecord from "./ResultRecord";
@@ -63,6 +38,8 @@ const useStyles = makeStyles(theme => ({
 const ResultList = props => {
   const classes = useStyles();
   const d = useDispatch();
+  const [isOpenResult, setIsOpenResult] = useState(false);
+  const [isOpenResultId, setIsOpenResultId] = useState("");
 
   const open = useSelector(state =>
     store.getAppState(state, "isOpenResultList")
@@ -81,36 +58,53 @@ const ResultList = props => {
       })
     );
   }, [d]);
+  const onSelect = useCallback(id => {
+    setIsOpenResult(true);
+    setIsOpenResultId(id);
+  }, []);
+  const onDeselect = useCallback(id => {
+    setIsOpenResult(false);
+  }, []);
 
   return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      TransitionComponent={Transition}
-    >
-      <AppBar className={classes.appBar}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={onClose}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" color="inherit" className={classes.flex}>
-            結果一覧
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <List>
-        {days.map(day => (
-          <>
-            <ListSubheader className={classes.subheader}>{day}</ListSubheader>
-            {dailyResultIds[day].map(resultId => (
-              <ResultListListItem key={resultId} resultId={resultId} />
-            ))}
-          </>
-        ))}
-      </List>
-      <ResultRecord />
-    </Dialog>
+    <>
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={onClose}
+        TransitionComponent={Transition}
+      >
+        <AppBar className={classes.appBar}>
+          <Toolbar>
+            <IconButton color="inherit" onClick={onClose}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" color="inherit" className={classes.flex}>
+              結果一覧
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <List>
+          {days.map(day => (
+            <>
+              <ListSubheader className={classes.subheader}>{day}</ListSubheader>
+              {dailyResultIds[day].map(resultId => (
+                <ResultListListItem
+                  key={resultId}
+                  resultId={resultId}
+                  onSelect={onSelect}
+                />
+              ))}
+            </>
+          ))}
+        </List>
+      </Dialog>
+      <ResultRecord
+        open={isOpenResult}
+        resultId={isOpenResultId}
+        onClose={onDeselect}
+      />
+    </>
   );
 };
 

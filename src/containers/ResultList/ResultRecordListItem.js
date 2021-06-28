@@ -1,5 +1,5 @@
 import React, { memo, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -25,18 +25,11 @@ const useStyles = makeStyles({
 
 const ResultListItem = props => {
   const classes = useStyles();
-  const d = useDispatch();
-
   const player = useSelector(state => store.getUserById(state, props.uid));
 
   const onSelect = useCallback(() => {
-    d(
-      store.appStateMutate(state => {
-        state.isOpenPlayerStatistics = true;
-        state.openPlayerStatisticsId = props.uid;
-      })
-    );
-  }, [d]);
+    props.onSelect(props.uid);
+  }, [props.onSelect, props.uid]);
 
   if (!player) return null;
 

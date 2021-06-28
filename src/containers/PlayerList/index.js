@@ -34,6 +34,7 @@ import ScoreAveIcon from "@material-ui/icons/TrendingUp";
 import BakushiIcon from "@material-ui/icons/FlashOn";
 
 import UserListItem from "./UserListItem";
+import PlayerStatistics from "containers/PlayerStatistics";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -75,6 +76,8 @@ const PlayerList = props => {
   const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [statisticsType, setStatisticsType] = useState("playNum");
+  const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
+  const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
   const timer = useRef(null);
 
   const open = useSelector(state =>
@@ -136,88 +139,107 @@ const PlayerList = props => {
       setSearchText(text);
     }, 500);
   }, []);
+  const onSelect = useCallback(id => {
+    setIsOpenPlayerStatistics(true);
+    setIsOpenPlayerStatisticsId(id);
+  }, []);
+  const onDeselect = useCallback(id => {
+    setIsOpenPlayerStatistics(false);
+  }, []);
 
   useEffect(() => {
     return () => clearTimeout(timer.current);
   }, []);
 
   return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      TransitionComponent={Transition}
-    >
-      <AppBar className={classes.appBar}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={onClose}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" color="inherit" className={classes.flex}>
-            プレイヤー一覧
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <List className={classes.list}>
-        <ListItem>
-          <TextField
-            label="プレイヤー名"
-            variant="outlined"
-            fullWidth
-            value={playerNameText}
-            onChange={onChange}
-            placeholder="プレイヤーの検索"
-            InputLabelProps={{
-              shrink: true
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={onCancel} edge="end">
-                    <CancelIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </ListItem>
-        {sortedUserIds.map(uid => (
-          <UserListItem key={uid} uid={uid} statisticsType={statisticsType} />
-        ))}
-      </List>
-      <BottomNavigation
-        value={statisticsType}
-        onChange={(_, value) => setStatisticsType(value)}
-        showLabels
-        className={classes.bottomNav}
+    <>
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={onClose}
+        TransitionComponent={Transition}
       >
-        <BottomNavigationAction
-          label="プレイ"
-          value="playNum"
-          icon={<PlaysIcon />}
-        />
-        <BottomNavigationAction
-          label="勝率"
-          value="winRate"
-          icon={<WinRateIcon />}
-        />
-        <BottomNavigationAction
-          label="平均点"
-          value="averageScore"
-          icon={<ScoreAveIcon />}
-        />
-        <BottomNavigationAction
-          label="高得点"
-          value="highestScore"
-          icon={<ScoreIcon />}
-        />
-        <BottomNavigationAction
-          label="爆死"
-          value="lowestScore"
-          icon={<BakushiIcon />}
-        />
-      </BottomNavigation>
-    </Dialog>
+        <AppBar className={classes.appBar}>
+          <Toolbar>
+            <IconButton color="inherit" onClick={onClose}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" color="inherit" className={classes.flex}>
+              プレイヤー一覧
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <List className={classes.list}>
+          <ListItem>
+            <TextField
+              label="プレイヤー名"
+              variant="outlined"
+              fullWidth
+              value={playerNameText}
+              onChange={onChange}
+              placeholder="プレイヤーの検索"
+              InputLabelProps={{
+                shrink: true
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={onCancel} edge="end">
+                      <CancelIcon />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+          </ListItem>
+          {sortedUserIds.map(uid => (
+            <UserListItem
+              key={uid}
+              uid={uid}
+              statisticsType={statisticsType}
+              onSelect={onSelect}
+            />
+          ))}
+        </List>
+        <BottomNavigation
+          value={statisticsType}
+          onChange={(_, value) => setStatisticsType(value)}
+          showLabels
+          className={classes.bottomNav}
+        >
+          <BottomNavigationAction
+            label="プレイ"
+            value="playNum"
+            icon={<PlaysIcon />}
+          />
+          <BottomNavigationAction
+            label="勝率"
+            value="winRate"
+            icon={<WinRateIcon />}
+          />
+          <BottomNavigationAction
+            label="平均点"
+            value="averageScore"
+            icon={<ScoreAveIcon />}
+          />
+          <BottomNavigationAction
+            label="高得点"
+            value="highestScore"
+            icon={<ScoreIcon />}
+          />
+          <BottomNavigationAction
+            label="爆死"
+            value="lowestScore"
+            icon={<BakushiIcon />}
+          />
+        </BottomNavigation>
+      </Dialog>
+      <PlayerStatistics
+        open={isOpenPlayerStatistics}
+        uid={isOpenPlayerStatisticsId}
+        onClose={onDeselect}
+      />
+    </>
   );
 };
 

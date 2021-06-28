@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useRef, useState, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -33,20 +33,14 @@ const PlayerName = props => {
 
 const ResultListListItem = props => {
   const classes = useStyles();
-  const d = useDispatch();
 
   const result = useSelector(state =>
     store.getResultById(state, props.resultId)
   );
 
   const onSelect = useCallback(() => {
-    d(
-      store.appStateMutate(state => {
-        state.isOpenResultRecord = true;
-        state.openResultRecordId = props.resultId;
-      })
-    );
-  }, [d]);
+    props.onSelect(props.resultId);
+  }, [props.onSelect, props.resultId]);
   if (!result) return null;
   const time = format(
     new Date(result.date.seconds * 1000 + result.date.nanoseconds / 1000000),

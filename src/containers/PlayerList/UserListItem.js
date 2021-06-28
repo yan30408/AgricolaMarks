@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -26,7 +26,6 @@ const useStyles = makeStyles({
 
 const UserListItem = props => {
   const classes = useStyles();
-  const d = useDispatch();
 
   const user = useSelector(state => store.getUserById(state, props.uid));
   const createdByTwitterId = useSelector(state =>
@@ -52,13 +51,8 @@ const UserListItem = props => {
   }, [props.statisticsType, statistics]);
 
   const onSelect = useCallback(() => {
-    d(
-      store.appStateMutate(state => {
-        state.isOpenPlayerStatistics = true;
-        state.openPlayerStatisticsId = props.uid;
-      })
-    );
-  }, [d]);
+    props.onSelect(props.uid);
+  }, [props.onSelect, props.uid]);
   if (!user.displayName) return null;
 
   return (
