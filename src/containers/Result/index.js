@@ -31,6 +31,7 @@ import DeleteIcon from "@material-ui/icons/Delete";
 
 import AlertDialog from "components/AlertDialog";
 import ResultListItem from "./ResultListItem";
+import ResultDetail from "containers/ResultDetail";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -59,6 +60,7 @@ const FullScreenDialog = props => {
   const [openNewGame, setOpenNewGame] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSave, setIsSave] = useState(true);
+  const [openDetail, setOpenDetail] = useState(false);
 
   const onClose = useCallback(() => {
     d(
@@ -94,6 +96,12 @@ const FullScreenDialog = props => {
   const onDateChange = useCallback(date => {
     setSelectedDate(date);
   }, []);
+  const onClickDetail = useCallback(() => {
+    setOpenDetail(true);
+  }, []);
+  const onCloseDetail = useCallback(() => {
+    setOpenDetail(false);
+  }, []);
 
   useEffect(() => {
     setSelectedDate(new Date());
@@ -115,6 +123,15 @@ const FullScreenDialog = props => {
           <Typography variant="h6" color="inherit" className={classes.flex}>
             Result
           </Typography>
+          <div className={classes.flex} />
+          <Button
+            onClick={onClickDetail}
+            color="inherit"
+            size="small"
+            variant="outlined"
+          >
+            Detail
+          </Button>
         </Toolbar>
       </AppBar>
       <List>
@@ -163,6 +180,11 @@ const FullScreenDialog = props => {
       >
         本当によろしいですか？
       </AlertDialog>
+      <ResultDetail
+        open={openDetail}
+        onClose={onCloseDetail}
+        results={sortedResult}
+      />
     </Dialog>
   );
 };

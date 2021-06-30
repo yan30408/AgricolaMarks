@@ -14,19 +14,16 @@ const ResultListItem = props => {
   const player = useSelector(state =>
     store.getAppCurrentPlayerById(state, props.uid)
   );
-  const colorId = useSelector(state =>
-    store.getAppCurrentPlayerKey(state, props.uid)
-  );
   if (!player) return null;
 
   return (
     <div>
-      <ListItem style={{ backgroundColor: Colors[colorId]?.sub }} divider>
+      <ListItem style={{ backgroundColor: Colors[props.color]?.sub }} divider>
         <ListItemAvatar>
           <Avatar
             src={player.iconUrl}
             alt={player.name}
-            style={{ backgroundColor: Colors[colorId]?.main }}
+            style={{ backgroundColor: Colors[props.color]?.main }}
           >
             {player.name?.substr(0, 1)}
           </Avatar>

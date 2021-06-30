@@ -15,10 +15,10 @@ import {
   Slide
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import DeleteIcon from "@material-ui/icons/Delete";
 
 import ResultRecordListItem from "./ResultRecordListItem";
 import PlayerStatistics from "containers/PlayerStatistics";
+import ResultDetail from "containers/ResultDetail";
 
 import { format } from "date-fns";
 
@@ -47,6 +47,7 @@ const ResultRecord = props => {
   const result = useSelector(state => store.getResultById(state, resultId));
   const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
   const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
+  const [openDetail, setOpenDetail] = useState(false);
 
   const onSelect = useCallback(id => {
     setIsOpenPlayerStatistics(true);
@@ -54,6 +55,12 @@ const ResultRecord = props => {
   }, []);
   const onDeselect = useCallback(id => {
     setIsOpenPlayerStatistics(false);
+  }, []);
+  const onClickDetail = useCallback(() => {
+    setOpenDetail(true);
+  }, []);
+  const onCloseDetail = useCallback(() => {
+    setOpenDetail(false);
   }, []);
 
   if (!result) return;
@@ -82,6 +89,15 @@ const ResultRecord = props => {
             <Typography variant="h6" color="inherit" className={classes.flex}>
               Result
             </Typography>
+            <div className={classes.flex} />
+            <Button
+              onClick={onClickDetail}
+              color="inherit"
+              size="small"
+              variant="outlined"
+            >
+              Detail
+            </Button>
           </Toolbar>
         </AppBar>
         <List>
@@ -101,18 +117,17 @@ const ResultRecord = props => {
                 onSelect={onSelect}
               />
             ))}
-          <ListItem>
-            <Button color="secondary" fullWidth variant="contained" disabled>
-              記録を削除する
-              <DeleteIcon className={classes.rightIcon} />
-            </Button>
-          </ListItem>
         </List>
       </Dialog>
       <PlayerStatistics
         open={isOpenPlayerStatistics}
         uid={isOpenPlayerStatisticsId}
         onClose={onDeselect}
+      />
+      <ResultDetail
+        open={openDetail}
+        onClose={onCloseDetail}
+        results={result.results}
       />
     </>
   );
