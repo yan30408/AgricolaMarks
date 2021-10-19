@@ -1,5 +1,10 @@
 export default [
   {
+    version: "2.6.1",
+    date: "2021.10.4",
+    changes: ["結果画面の「結果を破棄する」ボタンを削除しました"]
+  },
+  {
     version: "2.6.0",
     date: "2021.6.30",
     changes: [

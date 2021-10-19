@@ -160,17 +160,6 @@ const FullScreenDialog = props => {
             <SaveIcon className={classes.rightIcon} />
           </Button>
         </ListItem>
-        <ListItem>
-          <Button
-            color="secondary"
-            onClick={onClickNewGameWithNoSave}
-            fullWidth
-            variant="contained"
-          >
-            結果を破棄する
-            <DeleteIcon className={classes.rightIcon} />
-          </Button>
-        </ListItem>
       </List>
       <AlertDialog
         title={isSave ? "結果を記録します" : "結果を破棄します"}
