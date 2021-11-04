@@ -62,7 +62,7 @@ const ResultList = props => {
     setIsOpenResult(true);
     setIsOpenResultId(id);
   }, []);
-  const onDeselect = useCallback(id => {
+  const onDeselect = useCallback(allClose => {
     setIsOpenResult(false);
   }, []);
 

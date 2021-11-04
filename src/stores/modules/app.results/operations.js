@@ -1,6 +1,8 @@
 import actions from "./actions";
-import { appPlayersMutate } from "../app.players/operations";
+import { appPlayersMutate, appPlayersUpdate } from "../app.players/operations";
+import { appStateMutate } from "../app.state/operations";
 import { getAppCurrentPlayerKey } from "../app.players/selectors";
+import { getResultById } from "../entities.results/selectors";
 import { getAppResultByIndex } from "./selectors";
 
 export const appResultsMutate = actions.appResultsMutate;
@@ -28,6 +30,36 @@ export const appResultsSetPlayer = (uid, order) => (dispatch, getState) => {
       results[order].uid = uid;
       results[order].order = order;
       results[order].color = newPlayerKey;
+    })
+  );
+};
+
+export const appResultsApply = resultId => (dispatch, getState) => {
+  const state = getState();
+  const result = getResultById(state, resultId);
+
+  dispatch(
+    appStateMutate(state => {
+      state.resultDate = result.date.toDate();
+      state.resultId = resultId;
+    })
+  );
+  dispatch(
+    appPlayersMutate(players => {
+      for (var index = 0; index < result.results.length; ++index) {
+        players.current[result.results[index].color].uid =
+          result.results[index].uid;
+        players.current[result.results[index].color].order =
+          result.results[index].order;
+      }
+    })
+  );
+  dispatch(appPlayersUpdate());
+  dispatch(
+    appResultsMutate(results => {
+      for (var index = 0; index < result.results.length; ++index) {
+        results[result.results[index].order] = result.results[index];
+      }
     })
   );
 };

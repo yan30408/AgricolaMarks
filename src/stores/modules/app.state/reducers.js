@@ -20,8 +20,8 @@ const initialState = {
   isOpenResultList: false,
   isOpenStatistics: false,
 
-  openResultRecordId: 0,
-  openPlayerStatisticsId: 0
+  resultDate: null,
+  resultId: null
 };
 
 // Reducers

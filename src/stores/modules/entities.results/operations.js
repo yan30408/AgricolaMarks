@@ -19,25 +19,28 @@ export const addResult = data => () => {
   });
 };
 
-// const Converter = results => {
-//   return results.map(result => {
-//     return {
-//       ...result,
-//       order: -1,
-//       color: "",
-//     }
-//   })
-// }
+export const updateResult = (id, data) => () => {
+  if (!data) return null;
+  return resultsRef.doc(id).update({
+    date: data.date,
+    results: data.results,
+    updatedAt: Date.now()
+  });
+};
 
-// export const updateResult = (id, data) => () => {
+export const deleteResult = id => () => {
+  // return resultsRef.doc(id).update({
+  //   archived: true,
+  //   updatedAt: Date.now()
+  // });
+  // const batch = db.batch();
+  // batch.delete(resultsRef.doc(id));
+  // return batch.commit();
+
+  return resultsRef.doc(id).delete();
+};
+
+// export const convertResult = (id, data) => () => {
 //   if (!data) return null;
-//   return resultsRef.doc(id).update({results: Converter(data)});
-// };
-
-// export const deleteUserHistory = roomId => (dispatch, getState) => {
-//   const uid = getState().app.state.uid;
-//   if (!uid) return null;
-//   return usersRef(uid)
-//     .doc(roomId)
-//     .delete();
+//   return resultsRef.doc(id).update({archived: false});
 // };

@@ -95,6 +95,8 @@ const FullScreenDialog = props => {
     d(
       store.appStateMutate(state => {
         state.currentOrder = 0;
+        state.resultId = null;
+        state.resultDate = null;
       })
     );
     d(store.appPlayersInit);

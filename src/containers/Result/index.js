@@ -57,8 +57,11 @@ const FullScreenDialog = props => {
   const d = useDispatch();
   const open = useSelector(state => store.getAppState(state, "isOpenResult"));
   const sortedResult = useSelector(state => store.getSortedResult(state));
+  const resultId = useSelector(state => store.getAppState(state, "resultId"));
+  const resultDate = useSelector(state =>
+    store.getAppState(state, "resultDate")
+  );
   const [openNewGame, setOpenNewGame] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSave, setIsSave] = useState(true);
   const [openDetail, setOpenDetail] = useState(false);
 
@@ -83,18 +86,29 @@ const FullScreenDialog = props => {
   const onClickOkNewGame = useCallback(() => {
     setOpenNewGame(false);
     if (isSave && sortedResult.length > 0) {
-      d(store.addResult({ date: selectedDate, results: sortedResult }));
+      if (resultId !== null) {
+        d(
+          store.updateResult(resultId, {
+            date: resultDate,
+            results: sortedResult
+          })
+        );
+      } else {
+        d(store.addResult({ date: resultDate, results: sortedResult }));
+      }
     }
     d(
       store.appStateMutate(state => {
         state.currentOrder = 0;
+        state.resultId = null;
+        state.resultDate = null;
         state.isOpenResult = false;
       })
     );
     d(store.appResultsInit);
-  }, [d, isSave, selectedDate, sortedResult]);
+  }, [d, isSave, resultDate, sortedResult, resultId]);
   const onDateChange = useCallback(date => {
-    setSelectedDate(date);
+    d(store.appStateMutate(state => (state.resultDate = date)));
   }, []);
   const onClickDetail = useCallback(() => {
     setOpenDetail(true);
@@ -104,9 +118,11 @@ const FullScreenDialog = props => {
   }, []);
 
   useEffect(() => {
-    setSelectedDate(new Date());
+    if (open && resultDate === null) {
+      d(store.appStateMutate(state => (state.resultDate = new Date())));
+    }
     d(store.appPlayersUpdate());
-  }, [open]);
+  }, [open, resultDate]);
 
   return (
     <Dialog
@@ -141,7 +157,7 @@ const FullScreenDialog = props => {
               style={{ textAlign: "center" }}
               format="yyyy.MM.dd - HH:mm:ss"
               inputVariant="outlined"
-              value={selectedDate}
+              value={resultDate}
               onChange={onDateChange}
             />
           </MuiPickersUtilsProvider>

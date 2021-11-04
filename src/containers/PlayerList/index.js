@@ -143,7 +143,7 @@ const PlayerList = props => {
     setIsOpenPlayerStatistics(true);
     setIsOpenPlayerStatisticsId(id);
   }, []);
-  const onDeselect = useCallback(id => {
+  const onDeselect = useCallback(allClose => {
     setIsOpenPlayerStatistics(false);
   }, []);
 

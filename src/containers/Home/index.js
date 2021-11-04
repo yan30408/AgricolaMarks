@@ -79,6 +79,8 @@ const Home = props => {
     d(
       store.appStateMutate(state => {
         state.currentOrder = 0;
+        state.resultId = null;
+        state.resultDate = null;
         state.isOpenAllClear = false;
         state.isOpenMenu = false;
       })

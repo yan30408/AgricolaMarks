@@ -145,11 +145,7 @@ const PlayerStatistics = props => {
   const onMergeOK = useCallback(() => {
     setOpenMerge(false);
     d(store.updateUser(uid, { merged: myUid }));
-    d(
-      store.appStateMutate(state => {
-        state.openPlayerStatisticsId = myUid;
-      })
-    );
+    setIsOpenResultId(myUid);
   }, [uid, myUid]);
 
   const onSelect = useCallback(o => {
@@ -159,9 +155,13 @@ const PlayerStatistics = props => {
       setIsOpenResultId(payload.id);
     }
   }, []);
-  const onDeselect = useCallback(id => {
-    setIsOpenResult(false);
-  }, []);
+  const onDeselect = useCallback(
+    allClose => {
+      if (allClose === true) props.onClose(true);
+      setIsOpenResult(false);
+    },
+    [props.onClose]
+  );
 
   return (
     <>
