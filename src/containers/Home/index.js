@@ -1,7 +1,7 @@
-import React, { memo, useEffect, useCallback } from "react";
+﻿import React, { memo, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   Button,
   IconButton,
@@ -12,9 +12,9 @@ import {
   AppBar,
   Typography,
   Paper
-} from "@material-ui/core";
+} from "@mui/material";
 
-import MenuIcon from "@material-ui/icons/Menu";
+import MenuIcon from "@mui/icons-material/Menu";
 
 import CalcForm from "containers/CalcForm";
 import Result from "containers/Result";

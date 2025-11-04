@@ -1,7 +1,7 @@
-import React, { memo, useCallback } from "react";
+﻿import React, { memo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { Paper, Tabs, Tab, Grid, Hidden, Tooltip } from "@material-ui/core";
+import { Paper, Tabs, Tab, Grid, Tooltip } from "@mui/material";
 import { imageUrl } from "./data";
 
 const FixedScoreButton = props => {
@@ -18,12 +18,10 @@ const FixedScoreButton = props => {
 
   return (
     <Grid container spacing={0} alignItems="center" item>
-      <Hidden xsDown>
-        <Grid item sm={2}>
-          {props.label}
-        </Grid>
-      </Hidden>
-      <Grid item xs={2} sm={2} justify="space-around" container>
+      <Grid item sm={2} sx={{ display: { xs: "none", sm: "block" } }}>
+        {props.label}
+      </Grid>
+      <Grid item xs={2} sm={2} justifyContent="space-around" container>
         <Tooltip title={props.label}>
           <img
             src={imageUrl[props.id]}

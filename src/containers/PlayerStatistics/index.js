@@ -1,7 +1,7 @@
-import React, { memo, useCallback, forwardRef, useMemo, useState } from "react";
+﻿import React, { memo, useCallback, forwardRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   List,
@@ -17,9 +17,9 @@ import {
   Typography,
   Slide,
   Paper
-} from "@material-ui/core";
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import MergeIcon from "@material-ui/icons/PeopleAlt";
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
+import MergeIcon from "@mui/icons-material/PeopleAlt";
 
 import { Colors, Orders } from "Constants";
 import AlertDialog from "components/AlertDialog";

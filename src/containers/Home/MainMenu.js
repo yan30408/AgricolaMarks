@@ -1,7 +1,7 @@
-import React, { memo, useCallback } from "react";
+﻿import React, { memo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import { persistor } from "stores";
 import {
   SwipeableDrawer,
@@ -11,8 +11,8 @@ import {
   ListItemAvatar,
   ListItemIcon,
   Avatar
-} from "@material-ui/core";
-import ArrowForwardIcon from "@material-ui/icons/ArrowForwardIos";
+} from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForwardIos";
 
 const useStyles = makeStyles({
   flex: {

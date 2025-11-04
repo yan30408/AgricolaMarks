@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useRef, useState } from "react";
+﻿import React, { memo, useCallback, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   Avatar,
   ListItem,
@@ -9,8 +9,8 @@ import {
   ListItemText,
   ListItemIcon,
   Typography
-} from "@material-ui/core";
-import CheckIcon from "@material-ui/icons/Check";
+} from "@mui/material";
+import CheckIcon from "@mui/icons-material/Check";
 
 import { Colors } from "Constants";
 import PlayerColorSelect from "./PlayerColorSelect";

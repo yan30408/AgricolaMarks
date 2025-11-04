@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useMemo } from "react";
+﻿import React, { memo, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   Avatar,
   ListItem,
@@ -9,8 +9,8 @@ import {
   ListItemText,
   ListItemIcon,
   Typography
-} from "@material-ui/core";
-import ArrowForwardIcon from "@material-ui/icons/ArrowForwardIos";
+} from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { Colors } from "Constants";
 

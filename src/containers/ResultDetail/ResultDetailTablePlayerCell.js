@@ -1,7 +1,7 @@
-import React, { memo } from "react";
+﻿import React, { memo } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { Badge, Avatar, TableCell } from "@material-ui/core";
+import { Badge, Avatar, TableCell } from "@mui/material";
 import { Orders, Colors } from "Constants";
 
 const ResultDetailTablePlayer = props => {

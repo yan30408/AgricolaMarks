@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useState, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
 import {
   IconButton,
   List,
@@ -11,8 +10,8 @@ import {
   Typography,
   Slide,
   ListSubheader
-} from "@material-ui/core";
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 
 import ResultListListItem from "./ResultListListItem";
 import ResultRecord from "./ResultRecord";
@@ -21,22 +20,7 @@ const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
 });
 
-const useStyles = makeStyles(theme => ({
-  appBar: {
-    position: "sticky"
-  },
-  flex: {
-    flex: 1
-  },
-  subheader: {
-    backgroundColor: "#cfd8dc",
-    textAlign: "center",
-    lineHeight: "30px"
-  }
-}));
-
 const ResultList = props => {
-  const classes = useStyles();
   const d = useDispatch();
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [isOpenResultId, setIsOpenResultId] = useState("");
@@ -74,20 +58,28 @@ const ResultList = props => {
         onClose={onClose}
         TransitionComponent={Transition}
       >
-        <AppBar className={classes.appBar}>
+        <AppBar sx={{ position: "sticky" }}>
           <Toolbar>
             <IconButton color="inherit" onClick={onClose}>
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" color="inherit" className={classes.flex}>
+            <Typography variant="h6" color="inherit" sx={{ flex: 1 }}>
               結果一覧
             </Typography>
           </Toolbar>
         </AppBar>
         <List>
           {days.map(day => (
-            <>
-              <ListSubheader className={classes.subheader}>{day}</ListSubheader>
+            <React.Fragment key={day}>
+              <ListSubheader
+                sx={{
+                  backgroundColor: "#cfd8dc",
+                  textAlign: "center",
+                  lineHeight: "30px"
+                }}
+              >
+                {day}
+              </ListSubheader>
               {dailyResultIds[day].map(resultId => (
                 <ResultListListItem
                   key={resultId}
@@ -95,7 +87,7 @@ const ResultList = props => {
                   onSelect={onSelect}
                 />
               ))}
-            </>
+            </React.Fragment>
           ))}
         </List>
       </Dialog>

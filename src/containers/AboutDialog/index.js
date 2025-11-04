@@ -1,7 +1,7 @@
-import React, { memo, useCallback, forwardRef } from "react";
+﻿import React, { memo, useCallback, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   AppBar,
   Toolbar,
@@ -11,8 +11,8 @@ import {
   DialogContent,
   DialogTitle,
   Slide
-} from "@material-ui/core";
-import CloseIcon from "@material-ui/icons/Close";
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 import ChangeLog from "./ChangeLog";
 

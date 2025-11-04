@@ -1,5 +1,5 @@
-import React, { memo, forwardRef } from "react";
-import { makeStyles } from "@material-ui/core/styles";
+﻿import React, { memo, forwardRef } from "react";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   Toolbar,
@@ -12,9 +12,9 @@ import {
   TableCell,
   TableContainer,
   TableRow
-} from "@material-ui/core";
+} from "@mui/material";
 
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import ResultDetailTableRow from "./ResultDetailTableRow";
 import ResultDetailTablePlayerCell from "./ResultDetailTablePlayerCell";
 import ResultDetailTableScoreCell from "./ResultDetailTableScoreCell";

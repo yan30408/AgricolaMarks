@@ -1,7 +1,7 @@
-import React, { memo, useCallback, forwardRef, useMemo } from "react";
+﻿import React, { memo, useCallback, forwardRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   List,
@@ -14,8 +14,8 @@ import {
   Slide,
   Card,
   ListSubheader
-} from "@material-ui/core";
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 
 import { Orders } from "Constants";
 
@@ -98,9 +98,11 @@ const Statistics = props => {
       { label: Orders[4], 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     ];
     forEach(results, result => {
-      const sortedResult = result.results.sort((a, b) => a.order - b.order);
-      sortedResult.forEach((result, order) => {
-        data[order][GetRank(sortedResult, result.score.total)]++;
+      const sortedResult = [...(result.results || [])].sort(
+        (a, b) => a.order - b.order
+      );
+      sortedResult.forEach((entry, order) => {
+        data[order][GetRank(sortedResult, entry.score.total)]++;
       });
     });
     return data;

@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   memo,
   useCallback,
   useState,
@@ -9,7 +9,7 @@ import React, {
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { map } from "lodash";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   List,
@@ -24,11 +24,11 @@ import {
   Avatar,
   ListItemText,
   InputAdornment
-} from "@material-ui/core";
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import AddIcon from "@material-ui/icons/Add";
-import CancelIcon from "@material-ui/icons/Cancel";
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import AddIcon from "@mui/icons-material/Add";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 import AlertDialog from "components/AlertDialog";
 import UserListItem from "./UserListItem";

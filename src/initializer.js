@@ -1,13 +1,15 @@
-import firebase from "@firebase/app";
-import "@firebase/firestore";
-// import "@firebase/database";
-import "@firebase/auth";
-import "@firebase/storage";
-import "@firebase/functions";
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
+// import "firebase/compat/database";
+import "firebase/compat/auth";
+import "firebase/compat/storage";
+import "firebase/compat/functions";
 
 import config from "config/firebase";
 
-firebase.initializeApp(config);
+if (!firebase.apps.length) {
+  firebase.initializeApp(config);
+}
 
 export const db = firebase.firestore();
 // export const rdb = firebase.database();

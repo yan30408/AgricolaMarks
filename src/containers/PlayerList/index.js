@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   memo,
   useCallback,
   useState,
@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   List,
@@ -23,15 +23,15 @@ import {
   InputAdornment,
   BottomNavigation,
   BottomNavigationAction
-} from "@material-ui/core";
-import ArrowBackIcon from "@material-ui/icons/ArrowBackIos";
-import CancelIcon from "@material-ui/icons/Cancel";
-import PlaysIcon from "@material-ui/icons/SportsEsports";
-import WinsIcon from "@material-ui/icons/FormatListNumbered";
-import WinRateIcon from "@material-ui/icons/ThumbUp";
-import ScoreIcon from "@material-ui/icons/Grade";
-import ScoreAveIcon from "@material-ui/icons/TrendingUp";
-import BakushiIcon from "@material-ui/icons/FlashOn";
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
+import CancelIcon from "@mui/icons-material/Cancel";
+import PlaysIcon from "@mui/icons-material/SportsEsports";
+import WinsIcon from "@mui/icons-material/FormatListNumbered";
+import WinRateIcon from "@mui/icons-material/ThumbUp";
+import ScoreIcon from "@mui/icons-material/Grade";
+import ScoreAveIcon from "@mui/icons-material/TrendingUp";
+import BakushiIcon from "@mui/icons-material/FlashOn";
 
 import UserListItem from "./UserListItem";
 import PlayerStatistics from "containers/PlayerStatistics";

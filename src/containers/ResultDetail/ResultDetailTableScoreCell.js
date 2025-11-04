@@ -1,5 +1,5 @@
-import React, { memo } from "react";
-import { Typography, TableCell } from "@material-ui/core";
+﻿import React, { memo } from "react";
+import { Typography, TableCell } from "@mui/material";
 import { Colors } from "Constants";
 
 const ResultDetailTableScoreCell = props => {

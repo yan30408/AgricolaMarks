@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+﻿import React, { memo } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import {
@@ -7,7 +7,7 @@ import {
   ListItemAvatar,
   Avatar,
   Typography
-} from "@material-ui/core";
+} from "@mui/material";
 import { Orders, Colors } from "Constants";
 
 const ResultListItem = props => {

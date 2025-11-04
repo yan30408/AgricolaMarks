@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   memo,
   useState,
   useCallback,
@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 import {
   Button,
   IconButton,
@@ -18,16 +18,13 @@ import {
   AppBar,
   Typography,
   Slide
-} from "@material-ui/core";
-import {
-  KeyboardDateTimePicker,
-  MuiPickersUtilsProvider
-} from "@material-ui/pickers";
-import DateFnsUtils from "@date-io/date-fns";
+} from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
-import CloseIcon from "@material-ui/icons/Close";
-import SaveIcon from "@material-ui/icons/Save";
-import DeleteIcon from "@material-ui/icons/Delete";
+import CloseIcon from "@mui/icons-material/Close";
+import SaveIcon from "@mui/icons-material/Save";
 
 import AlertDialog from "components/AlertDialog";
 import ResultListItem from "./ResultListItem";
@@ -152,15 +149,17 @@ const FullScreenDialog = props => {
       </AppBar>
       <List>
         <ListItem divider style={{ justifyContent: "center" }}>
-          <MuiPickersUtilsProvider utils={DateFnsUtils}>
-            <KeyboardDateTimePicker
-              style={{ textAlign: "center" }}
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DateTimePicker
+              sx={{ textAlign: "center" }}
               format="yyyy.MM.dd - HH:mm:ss"
-              inputVariant="outlined"
               value={resultDate}
               onChange={onDateChange}
+              slotProps={{
+                textField: { variant: "outlined" }
+              }}
             />
-          </MuiPickersUtilsProvider>
+          </LocalizationProvider>
         </ListItem>
         {sortedResult.map(result => (
           <ResultListItem key={result.uid} {...result} />

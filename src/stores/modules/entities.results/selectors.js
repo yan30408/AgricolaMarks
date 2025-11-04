@@ -1,5 +1,5 @@
 import { createSelector } from "reselect";
-import { includes, forEach } from "lodash";
+import { includes } from "lodash";
 import { getValidUserIds, getMergedUserIds } from "../entities.users/selectors";
 
 export const getResults = state => {
@@ -33,12 +33,23 @@ export const getPlayNum = createSelector(
 export const getSortedDailyResultIds = createSelector(
   [getResults, getDailyResultIds],
   (results, dailyResultIds) => {
-    forEach(dailyResultIds, (_, key) => {
-      dailyResultIds[key].sort(
-        (a, b) => results[b].date.seconds - results[a].date.seconds
-      );
-    });
-    return dailyResultIds;
+    if (!dailyResultIds) {
+      return {};
+    }
+
+    const getTimestamp = id => {
+      const date = results[id]?.date;
+      if (!date) {
+        return 0;
+      }
+      return (date.seconds || 0) * 1000 + (date.nanoseconds || 0) / 1e6;
+    };
+
+    return Object.keys(dailyResultIds).reduce((acc, key) => {
+      const ids = dailyResultIds[key] || [];
+      acc[key] = [...ids].sort((a, b) => getTimestamp(b) - getTimestamp(a));
+      return acc;
+    }, {});
   }
 );
 
