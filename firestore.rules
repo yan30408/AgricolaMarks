@@ -1,13 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /results/{resultId}{
-      allow read, create, update;
-			allow delete: if request.auth.uid != null;
+    match /results/{resultId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if request.auth != null && request.auth.token.admin == true;
     }
     match /users/{uid} {
       allow read, create, update;
       allow delete: if request.auth.uid == request.resource.data.createdBy;
+    }
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{document=**}/stats/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{document=**}/statsSummary/{docId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }
