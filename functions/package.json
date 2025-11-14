@@ -1,0 +1,21 @@
+{
+  "name": "agricola-marks-functions",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "lint": "eslint . --ext .js",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.9.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "volta": {
+    "node": "20.19.5"
+  }
+}
