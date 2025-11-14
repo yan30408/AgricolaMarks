@@ -14,4 +14,13 @@ const Colors = {
   Purple: { main: "#9C27B0", sub: "#E1BEE7" }
 };
 
-export { ScoreByRoomType, Orders, Colors };
+const GameModes = {
+  classic: { label: "旧版" },
+  classicMoor: { label: "旧版：泥沼" },
+  revised: { label: "リバイズドエディション" },
+  revisedMoor: { label: "リバイズドエディション：泥沼" }
+};
+
+const DEFAULT_GAME_MODE = "classic";
+
+export { ScoreByRoomType, Orders, Colors, GameModes, DEFAULT_GAME_MODE };
