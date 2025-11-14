@@ -1,4 +1,4 @@
-﻿import React, { memo, useCallback, useMemo } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@mui/styles";
@@ -24,6 +24,15 @@ const useStyles = makeStyles({
   }
 });
 
+const DEFAULT_MODE = "classic";
+const MIN_REQUIRED_PLAYS = 10;
+
+const formatAverageScore = (scoreTotal, playCount) => {
+  if (!playCount || playCount < MIN_REQUIRED_PLAYS) return "-";
+  const average = scoreTotal / playCount;
+  return `${average.toFixed(1)} pt`;
+};
+
 const UserListItem = props => {
   const classes = useStyles();
 
@@ -34,26 +43,44 @@ const UserListItem = props => {
   const createdBy = createdByTwitterId
     ? `registered by ${createdByTwitterId}`
     : null;
-  const statistics = useSelector(state =>
-    store.getUserStatisticsById(state, { uid: props.uid })
+  const summary = useSelector(state =>
+    store.getUserStatsSummaryById(state, props.uid)
   );
+  const modeKey = props.mode || DEFAULT_MODE;
+  const modeStats = summary?.modes?.[modeKey] || null;
+  const favoriteColor =
+    summary?.favoriteColor ?? modeStats?.favoriteColor ?? null;
+
   const value = useMemo(() => {
-    const stat = statistics[props.statisticsType];
-    if (props.statisticsType.includes("Num")) {
-      return `${stat} 回`;
-    } else if (props.statisticsType.includes("average")) {
-      return stat === -1 ? "-" : `${stat} pt`;
-    } else if (props.statisticsType.includes("Score")) {
-      return `${stat.score} pt`;
-    } else {
-      return stat === -1 ? "-" : `${stat} %`;
+    if (!modeStats) return "-";
+    switch (props.statisticsType) {
+      case "playCount":
+        return `${modeStats.playCount || 0} 回`;
+      case "averageScore":
+        return formatAverageScore(
+          modeStats.scoreTotal || 0,
+          modeStats.playCount || 0
+        );
+      case "highestScore":
+        return modeStats.highestScore
+          ? `${modeStats.highestScore.score} pt`
+          : "-";
+      case "lowestScore":
+        return modeStats.lowestScore
+          ? `${modeStats.lowestScore.score} pt`
+          : "-";
+      case "rating":
+        return modeStats.rating != null ? `${modeStats.rating}` : "-";
+      default:
+        return "-";
     }
-  }, [props.statisticsType, statistics]);
+  }, [props.statisticsType, modeStats]);
 
   const onSelect = useCallback(() => {
     props.onSelect(props.uid);
   }, [props.onSelect, props.uid]);
-  if (!user.displayName) return null;
+
+  if (!user?.displayName) return null;
 
   return (
     <>
@@ -61,13 +88,13 @@ const UserListItem = props => {
         button
         onClick={onSelect}
         divider
-        style={{ backgroundColor: Colors[statistics.favoriteColor]?.sub }}
+        style={{ backgroundColor: Colors[favoriteColor]?.sub }}
       >
         <ListItemAvatar>
           <Avatar
             src={user.photoUrl}
             alt={user.displayName}
-            style={{ backgroundColor: Colors[statistics.favoriteColor]?.main }}
+            style={{ backgroundColor: Colors[favoriteColor]?.main }}
           >
             {user.displayName.substr(0, 1)}
           </Avatar>

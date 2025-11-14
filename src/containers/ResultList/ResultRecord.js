@@ -1,4 +1,4 @@
-﻿import React, { memo, useState, useCallback, forwardRef } from "react";
+import React, { memo, useState, useCallback, forwardRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@mui/styles";
@@ -24,6 +24,7 @@ import PlayerStatistics from "containers/PlayerStatistics";
 import ResultDetail from "containers/ResultDetail";
 
 import { format } from "date-fns";
+import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -41,6 +42,10 @@ const useStyles = makeStyles(theme => ({
   },
   rightIcon: {
     marginLeft: theme.spacing(1)
+  },
+  dateRow: {
+    paddingTop: theme.spacing(0.1),
+    paddingBottom: theme.spacing(0.1)
   }
 }));
 
@@ -102,13 +107,26 @@ const ResultRecord = props => {
     props.onClose(true);
   }, [d, isEdit, resultId, props.onClose]);
 
-  if (!result) return;
+  const sortedResults = useMemo(() => {
+    if (!result || !Array.isArray(result.results)) {
+      return [];
+    }
+    return [...result.results].sort(
+      (a, b) => (b?.score?.total || 0) - (a?.score?.total || 0)
+    );
+  }, [result]);
+  const isParticipant = sortedResults.some(entry => entry.uid === uid);
+  const isAdmin = useSelector(state =>
+    Boolean(store.getAppState(state, "isAdmin"))
+  );
+
+  if (!result) return null;
   const date = format(
     new Date(result.date.seconds * 1000 + result.date.nanoseconds / 1000000),
     "yyyy.MM.dd - HH:mm:ss"
   );
-  const isParticipant = result.results.some(result => result.uid === uid);
-  const isAdmin = uid === "RnsWdmQu9MdJ1U87GP5XBnGbqOC2";
+  const gameMode = result.gameMode || DEFAULT_GAME_MODE;
+  const gameModeLabel = GameModes[gameMode]?.label || gameMode;
 
   return (
     <>
@@ -142,28 +160,38 @@ const ResultRecord = props => {
           </Toolbar>
         </AppBar>
         <List>
-          <ListItem divider>
-            <ListItemText>
-              <Typography variant="h6" align="center">
-                {date}
-              </Typography>
-            </ListItemText>
+          <ListItem divider className={classes.dateRow}>
+            <ListItemText
+              primary={
+                <Typography variant="h6" align="center">
+                  {date}
+                </Typography>
+              }
+              secondary={
+                <Typography
+                  variant="caption"
+                  align="center"
+                  display="block"
+                  color="textSecondary"
+                >
+                  {gameModeLabel}
+                </Typography>
+              }
+            />
           </ListItem>
-          {result.results
-            .sort((a, b) => b.score.total - a.score.total)
-            .map(result => (
-              <ResultRecordListItem
-                key={result.uid}
-                {...result}
-                onSelect={onSelect}
-              />
-            ))}
+          {sortedResults.map(result => (
+            <ResultRecordListItem
+              key={result.uid}
+              {...result}
+              onSelect={onSelect}
+            />
+          ))}
           <ListItem>
             <Button
               color="primary"
               onClick={onClickEdit}
               fullWidth
-              disabled={!isParticipant}
+              disabled={!isParticipant && !isAdmin}
               variant="contained"
             >
               記録を編集する

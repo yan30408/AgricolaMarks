@@ -29,6 +29,7 @@ const MainMenu = props => {
     store.getAppState(state, "isAnonymous")
   );
   const myProfile = useSelector(state => store.getUserById(state, uid));
+  const resultId = useSelector(state => store.getAppState(state, "resultId"));
 
   const onClose = useCallback(() => {
     d(
@@ -59,8 +60,10 @@ const MainMenu = props => {
         state.currentOrder = 0;
       })
     );
-    d(store.appResultsInit);
-  }, [d]);
+    if (resultId === null) {
+      d(store.appResultsInit);
+    }
+  }, [d, resultId]);
   const onClickAllClear = useCallback(() => {
     d(
       store.appStateMutate(state => {
@@ -127,7 +130,7 @@ const MainMenu = props => {
           />
         </ListItem>
         <ListItem button onClick={onClickSetup}>
-          <ListItemText primary="参加プレイヤー設定" />
+          <ListItemText primary="ゲーム設定" />
           <ListItemIcon>
             <ArrowForwardIcon />
           </ListItemIcon>

@@ -23,7 +23,11 @@ import {
   ListItemAvatar,
   Avatar,
   ListItemText,
-  InputAdornment
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -32,6 +36,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 
 import AlertDialog from "components/AlertDialog";
 import UserListItem from "./UserListItem";
+import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -71,6 +76,9 @@ const FullScreenDialog = props => {
   const filteredUserIds = useSelector(state =>
     store.getFiltterdUserIds(state, { searchText })
   );
+  const gameMode = useSelector(
+    state => store.getAppState(state, "gameMode") || DEFAULT_GAME_MODE
+  );
 
   const onClose = useCallback(() => {
     onCancel();
@@ -97,6 +105,7 @@ const FullScreenDialog = props => {
         state.currentOrder = 0;
         state.resultId = null;
         state.resultDate = null;
+        state.gameMode = DEFAULT_GAME_MODE;
       })
     );
     d(store.appPlayersInit);
@@ -125,6 +134,17 @@ const FullScreenDialog = props => {
       setSearchText(text);
     }, 500);
   }, []);
+  const onGameModeChange = useCallback(
+    event => {
+      const value = event?.target?.value || DEFAULT_GAME_MODE;
+      d(
+        store.appStateMutate(state => {
+          state.gameMode = value;
+        })
+      );
+    },
+    [d]
+  );
 
   useEffect(() => {
     return () => clearTimeout(timer.current);
@@ -143,7 +163,7 @@ const FullScreenDialog = props => {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" color="inherit" className={classes.flex}>
-            参加プレイヤー設定
+            ゲーム設定
           </Typography>
           <IconButton color="inherit" onClick={onClickReset}>
             <RefreshIcon />
@@ -151,6 +171,23 @@ const FullScreenDialog = props => {
         </Toolbar>
       </AppBar>
       <List>
+        <ListItem>
+          <FormControl fullWidth>
+            <InputLabel id="setup-game-mode-label">ゲームモード</InputLabel>
+            <Select
+              labelId="setup-game-mode-label"
+              value={gameMode}
+              label="ゲームモード"
+              onChange={onGameModeChange}
+            >
+              {Object.entries(GameModes).map(([value, info]) => (
+                <MenuItem key={value} value={value}>
+                  {info.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </ListItem>
         <ListItem>
           <TextField
             label="プレイヤー名"

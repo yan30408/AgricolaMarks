@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   memo,
   useCallback,
   useState,
@@ -27,11 +27,10 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import CancelIcon from "@mui/icons-material/Cancel";
 import PlaysIcon from "@mui/icons-material/SportsEsports";
-import WinsIcon from "@mui/icons-material/FormatListNumbered";
-import WinRateIcon from "@mui/icons-material/ThumbUp";
 import ScoreIcon from "@mui/icons-material/Grade";
 import ScoreAveIcon from "@mui/icons-material/TrendingUp";
 import BakushiIcon from "@mui/icons-material/FlashOn";
+import RatingIcon from "@mui/icons-material/Leaderboard";
 
 import UserListItem from "./UserListItem";
 import PlayerStatistics from "containers/PlayerStatistics";
@@ -70,12 +69,51 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
+const DEFAULT_MODE = "classic";
+const MIN_REQUIRED_PLAYS = 10;
+
+const getAverageScore = stats => {
+  if (!stats || !stats.playCount || stats.playCount < MIN_REQUIRED_PLAYS) {
+    return 0;
+  }
+  return stats.scoreTotal / stats.playCount;
+};
+
+const compareStatistics = (a, b, type) => {
+  switch (type) {
+    case "playCount":
+      return (b?.playCount || 0) - (a?.playCount || 0);
+    case "rating":
+      return (
+        (b?.rating ?? Number.NEGATIVE_INFINITY) -
+        (a?.rating ?? Number.NEGATIVE_INFINITY)
+      );
+    case "averageScore":
+      return getAverageScore(b) - getAverageScore(a);
+    case "highestScore":
+      return (b?.highestScore?.score || 0) - (a?.highestScore?.score || 0);
+    case "lowestScore": {
+      const aScore =
+        a?.playCount && a?.lowestScore
+          ? a.lowestScore.score
+          : Number.POSITIVE_INFINITY;
+      const bScore =
+        b?.playCount && b?.lowestScore
+          ? b.lowestScore.score
+          : Number.POSITIVE_INFINITY;
+      return aScore - bScore;
+    }
+    default:
+      return 0;
+  }
+};
+
 const PlayerList = props => {
   const classes = useStyles();
   const d = useDispatch();
   const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [statisticsType, setStatisticsType] = useState("playNum");
+  const [statisticsType, setStatisticsType] = useState("playCount");
   const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
   const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
   const timer = useRef(null);
@@ -86,38 +124,16 @@ const PlayerList = props => {
   const filteredUserIds = useSelector(state =>
     store.getFiltterdUserIds(state, { searchText })
   );
-  const allStatistics = useSelector(state => store.getAllUserStatistics(state));
+  const allStatistics = useSelector(state =>
+    store.getAllUserStatsSummary(state)
+  );
   const sortedUserIds = useMemo(() => {
-    if (Object.keys(allStatistics).length > 0) {
-      return filteredUserIds
-        .filter(id => allStatistics[id])
-        .sort((a, b) => {
-          if (statisticsType === "highestScore") {
-            return (
-              allStatistics[b][statisticsType].score -
-              allStatistics[a][statisticsType].score
-            );
-          } else if (statisticsType === "lowestScore") {
-            if (allStatistics[a]["playNum"] === 0) {
-              return 1;
-            } else if (allStatistics[b]["playNum"] === 0) {
-              return -1;
-            } else {
-              return (
-                allStatistics[a][statisticsType].score -
-                allStatistics[b][statisticsType].score
-              );
-            }
-          } else {
-            return (
-              allStatistics[b][statisticsType] -
-              allStatistics[a][statisticsType]
-            );
-          }
-        });
-    } else {
-      return filteredUserIds;
-    }
+    const candidates = [...filteredUserIds];
+    return candidates.sort((a, b) => {
+      const statsA = allStatistics[a]?.modes?.[DEFAULT_MODE] || null;
+      const statsB = allStatistics[b]?.modes?.[DEFAULT_MODE] || null;
+      return compareStatistics(statsA, statsB, statisticsType);
+    });
   }, [statisticsType, filteredUserIds, allStatistics]);
 
   const onClose = useCallback(() => {
@@ -146,6 +162,19 @@ const PlayerList = props => {
   const onDeselect = useCallback(allClose => {
     setIsOpenPlayerStatistics(false);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    filteredUserIds.forEach(uid => {
+      d(
+        store.fetchUserStatsSummaryById(uid, {
+          modes: [DEFAULT_MODE]
+        })
+      );
+    });
+  }, [open, filteredUserIds, d]);
 
   useEffect(() => {
     return () => clearTimeout(timer.current);
@@ -196,6 +225,7 @@ const PlayerList = props => {
             <UserListItem
               key={uid}
               uid={uid}
+              mode={DEFAULT_MODE}
               statisticsType={statisticsType}
               onSelect={onSelect}
             />
@@ -209,13 +239,13 @@ const PlayerList = props => {
         >
           <BottomNavigationAction
             label="プレイ"
-            value="playNum"
+            value="playCount"
             icon={<PlaysIcon />}
           />
           <BottomNavigationAction
-            label="勝率"
-            value="winRate"
-            icon={<WinRateIcon />}
+            label="レーティング"
+            value="rating"
+            icon={<RatingIcon />}
           />
           <BottomNavigationAction
             label="平均点"
@@ -223,7 +253,7 @@ const PlayerList = props => {
             icon={<ScoreAveIcon />}
           />
           <BottomNavigationAction
-            label="高得点"
+            label="最高点"
             value="highestScore"
             icon={<ScoreIcon />}
           />

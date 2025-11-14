@@ -29,6 +29,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import AlertDialog from "components/AlertDialog";
 import ResultListItem from "./ResultListItem";
 import ResultDetail from "containers/ResultDetail";
+import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -58,6 +59,10 @@ const FullScreenDialog = props => {
   const resultDate = useSelector(state =>
     store.getAppState(state, "resultDate")
   );
+  const gameMode = useSelector(
+    state => store.getAppState(state, "gameMode") || DEFAULT_GAME_MODE
+  );
+  const gameModeLabel = GameModes[gameMode]?.label || gameMode;
   const [openNewGame, setOpenNewGame] = useState(false);
   const [isSave, setIsSave] = useState(true);
   const [openDetail, setOpenDetail] = useState(false);
@@ -82,16 +87,29 @@ const FullScreenDialog = props => {
   }, []);
   const onClickOkNewGame = useCallback(() => {
     setOpenNewGame(false);
+    const sanitizedResults = sortedResult.map(player => ({
+      ...player,
+      ratingBefore:
+        player.ratingBefore !== undefined ? player.ratingBefore : null,
+      ratingAfter: player.ratingAfter !== undefined ? player.ratingAfter : null
+    }));
     if (isSave && sortedResult.length > 0) {
       if (resultId !== null) {
         d(
           store.updateResult(resultId, {
             date: resultDate,
-            results: sortedResult
+            results: sanitizedResults,
+            gameMode
           })
         );
       } else {
-        d(store.addResult({ date: resultDate, results: sortedResult }));
+        d(
+          store.addResult({
+            date: resultDate,
+            results: sanitizedResults,
+            gameMode
+          })
+        );
       }
     }
     d(
@@ -103,7 +121,7 @@ const FullScreenDialog = props => {
       })
     );
     d(store.appResultsInit);
-  }, [d, isSave, resultDate, sortedResult, resultId]);
+  }, [d, isSave, resultDate, sortedResult, resultId, gameMode]);
   const onDateChange = useCallback(date => {
     d(store.appStateMutate(state => (state.resultDate = date)));
   }, []);
@@ -119,7 +137,7 @@ const FullScreenDialog = props => {
       d(store.appStateMutate(state => (state.resultDate = new Date())));
     }
     d(store.appPlayersUpdate());
-  }, [open, resultDate]);
+  }, [open, resultDate, d]);
 
   return (
     <Dialog
@@ -171,18 +189,54 @@ const FullScreenDialog = props => {
             fullWidth
             variant="contained"
           >
-            結果を記録する
+            {resultId !== null ? "編集内容で上書きする" : "結果を記録する"}
             <SaveIcon className={classes.rightIcon} />
           </Button>
         </ListItem>
+        {resultId !== null ? (
+          <ListItem>
+            <Button
+              color="secondary"
+              onClick={onClickNewGameWithNoSave}
+              fullWidth
+              variant="outlined"
+            >
+              編集内容を破棄する
+            </Button>
+          </ListItem>
+        ) : null}
       </List>
       <AlertDialog
-        title={isSave ? "結果を記録します" : "結果を破棄します"}
+        title={
+          resultId !== null
+            ? isSave
+              ? "編集内容で上書きします"
+              : "編集内容を破棄します"
+            : "結果を記録します"
+        }
         isOpen={openNewGame}
         onClose={onCloseNewGame}
         onClickOk={onClickOkNewGame}
       >
-        本当によろしいですか？
+        <Typography variant="body2">
+          {resultId !== null ? (
+            <>
+              {isSave ? (
+                `${gameModeLabel} のプレイ結果として上書きします。`
+              ) : (
+                <>
+                  編集内容を破棄します。
+                  <br />
+                  元データはそのまま保持されます。
+                </>
+              )}
+            </>
+          ) : (
+            `${gameModeLabel} のプレイ結果を記録します。`
+          )}
+          <br />
+          本当によろしいですか？
+        </Typography>
       </AlertDialog>
       <ResultDetail
         open={openDetail}

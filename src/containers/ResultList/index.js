@@ -1,6 +1,14 @@
-import React, { memo, useCallback, useState, forwardRef } from "react";
+import React, {
+  memo,
+  useCallback,
+  useState,
+  forwardRef,
+  useMemo,
+  useEffect
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
+import { makeStyles } from "@mui/styles";
 import {
   IconButton,
   List,
@@ -20,7 +28,27 @@ const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
 });
 
+const useStyles = makeStyles(theme => ({
+  appBar: {
+    position: "sticky"
+  },
+  flex: {
+    flex: 1
+  },
+  list: {
+    overflowY: "auto",
+    height: "100%",
+    flex: "1 1 auto"
+  },
+  subheader: {
+    backgroundColor: "#cfd8dc",
+    textAlign: "center",
+    lineHeight: "30px"
+  }
+}));
+
 const ResultList = props => {
+  const classes = useStyles();
   const d = useDispatch();
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [isOpenResultId, setIsOpenResultId] = useState("");
@@ -28,12 +56,22 @@ const ResultList = props => {
   const open = useSelector(state =>
     store.getAppState(state, "isOpenResultList")
   );
-  const dailyResultIds = useSelector(state =>
-    store.getSortedDailyResultIds(state)
+  const groups = useSelector(state => store.getResultsGroupedByDay(state));
+  const loading = useSelector(state => store.getResultsLoading(state));
+  const hasMore = useSelector(state => store.getResultsHasMore(state));
+  const initialized = useSelector(state => store.getResultsInitialized(state));
+
+  const handleScroll = useCallback(
+    event => {
+      const target = event.currentTarget;
+      const isNearBottom =
+        target.scrollHeight - target.scrollTop - target.clientHeight < 48;
+      if (isNearBottom && !loading && hasMore) {
+        d(store.fetchResultsPage());
+      }
+    },
+    [loading, hasMore, d]
   );
-  const days = Object.keys(dailyResultIds)
-    .sort()
-    .reverse();
 
   const onClose = useCallback(() => {
     d(
@@ -50,6 +88,14 @@ const ResultList = props => {
     setIsOpenResult(false);
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      d(store.fetchResultsPage({ reset: true }));
+    }
+  }, [open, d]);
+
+  const hasData = groups.length > 0;
+
   return (
     <>
       <Dialog
@@ -58,29 +104,23 @@ const ResultList = props => {
         onClose={onClose}
         TransitionComponent={Transition}
       >
-        <AppBar sx={{ position: "sticky" }}>
+        <AppBar className={classes.appBar}>
           <Toolbar>
             <IconButton color="inherit" onClick={onClose}>
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" color="inherit" sx={{ flex: 1 }}>
+            <Typography variant="h6" color="inherit" className={classes.flex}>
               結果一覧
             </Typography>
           </Toolbar>
         </AppBar>
-        <List>
-          {days.map(day => (
-            <React.Fragment key={day}>
-              <ListSubheader
-                sx={{
-                  backgroundColor: "#cfd8dc",
-                  textAlign: "center",
-                  lineHeight: "30px"
-                }}
-              >
-                {day}
+        <List className={classes.list} onScroll={handleScroll}>
+          {groups.map(group => (
+            <React.Fragment key={group.day}>
+              <ListSubheader className={classes.subheader}>
+                {group.day}
               </ListSubheader>
-              {dailyResultIds[day].map(resultId => (
+              {group.resultIds.map(resultId => (
                 <ResultListListItem
                   key={resultId}
                   resultId={resultId}
@@ -89,6 +129,16 @@ const ResultList = props => {
               ))}
             </React.Fragment>
           ))}
+          {!loading && !hasData ? (
+            <ListSubheader className={classes.subheader}>
+              データがありません
+            </ListSubheader>
+          ) : null}
+          {loading ? (
+            <ListSubheader className={classes.subheader}>
+              読み込み中...
+            </ListSubheader>
+          ) : null}
         </List>
       </Dialog>
       <ResultRecord

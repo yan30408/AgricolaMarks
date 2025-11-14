@@ -74,16 +74,28 @@ const ResultDetail = props => {
           <TableBody>
             <TableRow>
               <TableCell padding="none" size="small"></TableCell>
-              {results.map(result => {
-                return <ResultDetailTablePlayerCell {...result} />;
+              {results.map((result, index) => {
+                const key = result.resultId || result.uid || index;
+                return (
+                  <ResultDetailTablePlayerCell
+                    key={`player-${key}`}
+                    {...result}
+                  />
+                );
               })}
             </TableRow>
             <TableRow>
               <TableCell align="center" padding="none" size="small">
                 <Typography variant="subtitle2">Score</Typography>
               </TableCell>
-              {results.map(result => {
-                return <ResultDetailTableScoreCell {...result} />;
+              {results.map((result, index) => {
+                const key = result.resultId || result.uid || index;
+                return (
+                  <ResultDetailTableScoreCell
+                    key={`score-${key}`}
+                    {...result}
+                  />
+                );
               })}
             </TableRow>
             {fixedButtonData.map(data => (

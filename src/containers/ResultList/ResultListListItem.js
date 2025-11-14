@@ -59,9 +59,16 @@ const ResultListListItem = props => {
               variant="caption"
               color="textSecondary"
             >
-              {result.results.map((player, index) => (
-                <PlayerName uid={player.uid} index={index} />
-              ))}
+              {result.results.map((player, index) => {
+                const key = player.uid || index;
+                return (
+                  <PlayerName
+                    key={`player-${key}`}
+                    uid={player.uid}
+                    index={index}
+                  />
+                );
+              })}
             </Typography>
           }
         />

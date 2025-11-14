@@ -95,7 +95,7 @@ const Home = props => {
     return d(store.subscribeUserState());
   }, [d]);
   useEffect(() => {
-    return d(store.subscribeResults());
+    d(store.fetchResultsPage({ reset: true }));
   }, [d]);
 
   return (
