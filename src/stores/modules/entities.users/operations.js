@@ -1,5 +1,5 @@
 import actions from "./actions";
-import { db, FieldValue } from "initializer";
+import { db, functions } from "initializer";
 //import sendEvent from "modules/sendEvent";
 import { createSubscribeCollection } from "../firestoreModuleUtils";
 import { UserRecord } from "./records";
@@ -61,6 +61,15 @@ export const updateUser = (uid, data) => () => {
   return usersRef.doc(uid).update({
     ...data,
     updatedAt: Date.now()
+  });
+};
+
+export const mergeUserAccounts = (sourceUid, targetUid) => async () => {
+  if (!sourceUid) return null;
+  const callable = functions.httpsCallable("mergeUserAccounts");
+  return callable({
+    sourceUid,
+    targetUid
   });
 };
 

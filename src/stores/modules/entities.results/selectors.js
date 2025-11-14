@@ -1,148 +1,64 @@
 import { createSelector } from "reselect";
-import { includes } from "lodash";
-import { getValidUserIds, getMergedUserIds } from "../entities.users/selectors";
+import { format } from "date-fns";
 
-export const getResults = state => {
-  return state.entities.results.byId;
-};
+const getState = state => state.entities.results || {};
 
-export const getResultById = (state, id) => {
-  return state.entities.results.byId[id];
-};
+export const getResultsLoading = state => getState(state).loading;
+export const getResultsHasMore = state => getState(state).hasMore;
+export const getResultsError = state => getState(state).error;
+export const getResultsFilters = state => getState(state).filters || {};
+export const getResultsInitialized = state => getState(state).initialized;
 
-export const getResultIds = state => {
-  return state.entities.results.allIds || [];
-};
+export const getResultById = (state, id) => getState(state).byId?.[id] || null;
 
-export const getDailyResultIds = state => {
-  return state.entities.results.dailyReducer;
-};
-
-export const getUserlyResultIds = state => {
-  return state.entities.results.userlyReducer;
-};
-
-const getPropsUid = (_, props) => props.uid;
-export const getPlayNum = createSelector(
-  [getResults, getResultIds, getPropsUid],
-  (results, ids, uid) => {
-    return ids.filter(id => includes(results[id], uid)).length;
-  }
+export const getResultsOrderedIds = createSelector(
+  [getState],
+  resultsState => resultsState.orderedIds || []
 );
 
-export const getSortedDailyResultIds = createSelector(
-  [getResults, getDailyResultIds],
-  (results, dailyResultIds) => {
-    if (!dailyResultIds) {
-      return {};
-    }
-
-    const getTimestamp = id => {
-      const date = results[id]?.date;
-      if (!date) {
-        return 0;
-      }
-      return (date.seconds || 0) * 1000 + (date.nanoseconds || 0) / 1e6;
-    };
-
-    return Object.keys(dailyResultIds).reduce((acc, key) => {
-      const ids = dailyResultIds[key] || [];
-      acc[key] = [...ids].sort((a, b) => getTimestamp(b) - getTimestamp(a));
-      return acc;
-    }, {});
+const toDate = value => {
+  if (!value) return null;
+  if (typeof value.toDate === "function") {
+    return value.toDate();
   }
-);
+  if (value.seconds !== undefined) {
+    return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
-const getUserStatistics = (results, userlyResultIds, uid, state) => {
-  let statistics = {
-    playNum: 0,
-    winRate: -1,
-    highestScore: { score: 0 },
-    lowestScore: { score: 0 },
-    averageScore: -1,
-    favoriteColor: null,
-    record: []
-  };
-  let totalScore = 0;
-  let colors = { Red: 0, Blue: 0, Green: 0, White: 0, Purple: 0 };
-  let uids = getMergedUserIds(state, { uid });
-  let numWin = 0;
-  let numLose = 0;
-  uids.push(uid);
-  uids.forEach(uid => {
-    if (userlyResultIds[uid]) {
-      userlyResultIds[uid].forEach(resultId => {
-        const myResult = results[resultId].results.find(
-          result => result.uid == uid
-        );
-        let myRank = 1;
-        results[resultId].results.forEach(result => {
-          if (result.score.total > myResult.score.total) {
-            ++myRank;
-          }
-        });
-        const score = myResult.score.total;
-        const date = results[resultId].date;
-        totalScore += score;
-        if (score > statistics.highestScore.score) {
-          statistics.highestScore = { score, date };
-        }
-        if (
-          score < statistics.lowestScore.score ||
-          statistics.lowestScore.score === 0
-        ) {
-          statistics.lowestScore = { score, date };
-        }
-        statistics.record.push({
-          id: resultId,
-          rank: myRank,
-          order: myResult.order,
-          date
-        });
-        numWin += 5 - myRank;
-        numLose += myRank - 1;
-        colors[myResult.color]++;
-      });
-      statistics.playNum += userlyResultIds[uid].length;
-    }
-  });
-  if (statistics.playNum > 0) {
-    let num = 0;
-    Object.keys(colors).forEach(key => {
-      if (num < colors[key]) {
-        num = colors[key];
-        statistics.favoriteColor = key;
+const formatDayKey = value => {
+  const date = toDate(value);
+  if (!date) {
+    return "Unknown";
+  }
+  try {
+    return format(date, "yyyy/MM/dd");
+  } catch (error) {
+    return "Unknown";
+  }
+};
+
+export const getResultsGroupedByDay = createSelector(
+  [getResultsOrderedIds, getState],
+  (ids, resultsState) => {
+    const byId = resultsState.byId || {};
+    const groups = [];
+    ids.forEach(id => {
+      const result = byId[id];
+      if (!result) return;
+      const dayKey = formatDayKey(result.playedAt || result.date);
+      const lastGroup = groups[groups.length - 1];
+      if (!lastGroup || lastGroup.day !== dayKey) {
+        groups.push({ day: dayKey, resultIds: [id] });
+      } else {
+        lastGroup.resultIds.push(id);
       }
     });
-    // ある程度プレイしてない人はここで弾く
-    if (statistics.playNum >= 10) {
-      statistics.averageScore = (totalScore / statistics.playNum).toFixed(1);
-      statistics.winRate = ((numWin / (numWin + numLose)) * 100).toFixed(1);
-    }
-  }
-  return statistics;
-};
-
-const getState = state => state;
-export const getUserStatisticsById = createSelector(
-  [getResults, getUserlyResultIds, getPropsUid, getState],
-  (results, userlyResultIds, uid, state) => {
-    return getUserStatistics(results, userlyResultIds, uid, state);
-  }
-);
-
-export const getAllUserStatistics = createSelector(
-  [getResults, getUserlyResultIds, getValidUserIds, getState],
-  (results, userlyResultIds, uids, state) => {
-    let allStatistics = {};
-    uids.forEach(uid => {
-      allStatistics[uid] = getUserStatistics(
-        results,
-        userlyResultIds,
-        uid,
-        state
-      );
-    });
-    return allStatistics;
+    return groups;
   }
 );

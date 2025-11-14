@@ -1,3 +1,6 @@
-import { createTypes } from "../firestoreModuleUtils";
+export const RESULTS_FETCH_REQUEST = "entities/results/FETCH_REQUEST";
+export const RESULTS_FETCH_SUCCESS = "entities/results/FETCH_SUCCESS";
+export const RESULTS_FETCH_FAILURE = "entities/results/FETCH_FAILURE";
+export const RESULTS_RESET = "entities/results/RESET";
 
-export default createTypes("results");
+export const RESULTS_PAGE_SIZE = 10;

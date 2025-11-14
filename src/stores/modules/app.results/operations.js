@@ -1,9 +1,11 @@
 import actions from "./actions";
+import { defaultResult } from "./reducers";
 import { appPlayersMutate, appPlayersUpdate } from "../app.players/operations";
 import { appStateMutate } from "../app.state/operations";
 import { getAppCurrentPlayerKey } from "../app.players/selectors";
 import { getResultById } from "../entities.results/selectors";
 import { getAppResultByIndex } from "./selectors";
+import { DEFAULT_GAME_MODE } from "Constants";
 
 export const appResultsMutate = actions.appResultsMutate;
 export const appResultsInit = actions.appResultsInit;
@@ -42,6 +44,7 @@ export const appResultsApply = resultId => (dispatch, getState) => {
     appStateMutate(state => {
       state.resultDate = result.date.toDate();
       state.resultId = resultId;
+      state.gameMode = result.gameMode || DEFAULT_GAME_MODE;
     })
   );
   dispatch(
@@ -58,7 +61,16 @@ export const appResultsApply = resultId => (dispatch, getState) => {
   dispatch(
     appResultsMutate(results => {
       for (var index = 0; index < result.results.length; ++index) {
-        results[result.results[index].order] = result.results[index];
+        const entry = result.results[index];
+        const order = entry.order;
+        results[order] = {
+          ...defaultResult,
+          ...entry,
+          ratingBefore:
+            entry.ratingBefore !== undefined ? entry.ratingBefore : null,
+          ratingAfter:
+            entry.ratingAfter !== undefined ? entry.ratingAfter : null
+        };
       }
     })
   );

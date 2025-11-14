@@ -7,8 +7,7 @@ import { UserRecord } from "./records";
 const emptyUser = UserRecord({
   displayName: null,
   photoUrl: null,
-  twitterId: null,
-  merged: false
+  twitterId: null
 });
 
 export const getUsers = state => {
@@ -16,12 +15,7 @@ export const getUsers = state => {
 };
 
 export const getUserById = (state, uid) => {
-  const user = state.entities.users.byId[uid] || emptyUser;
-  if (!user.merged) {
-    return user;
-  } else {
-    return state.entities.users.byId[user.merged] || emptyUser;
-  }
+  return state.entities.users.byId[uid] || emptyUser;
 };
 
 export const getUserIds = state => {
@@ -30,9 +24,7 @@ export const getUserIds = state => {
 
 export const getValidUserIds = createSelector(
   [getUserIds, getUsers],
-  (ids, users) => {
-    return ids.filter(id => !users[id].merged);
-  }
+  ids => ids
 );
 
 const getUId = state => getAppState(state, "uid");
@@ -59,13 +51,5 @@ export const getFiltterdUserIds = createSelector(
         users[id]?.twitterId?.includes(searchText)
       );
     });
-  }
-);
-
-const getPropsUid = (_, props) => props.uid;
-export const getMergedUserIds = createSelector(
-  [getUsers, getUserIds, getPropsUid],
-  (users, ids, uid) => {
-    return ids.filter(id => users[id].merged === uid);
   }
 );

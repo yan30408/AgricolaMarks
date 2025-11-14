@@ -12,6 +12,9 @@ import appPlayers from "./modules/app.players";
 // entities
 import users from "./modules/entities.users";
 import results from "./modules/entities.results";
+import userStats from "./modules/entities.userStats";
+import userStatsSummary from "./modules/entities.userStatsSummary";
+import globalStats from "./modules/entities.globalStats";
 
 const appStatePersistConfig = {
   key: "store.app.state",
@@ -39,7 +42,10 @@ const rootReducer = combineReducers({
   }),
   entities: combineReducers({
     users,
-    results
+    results,
+    userStats,
+    userStatsSummary,
+    globalStats
   })
 });
 

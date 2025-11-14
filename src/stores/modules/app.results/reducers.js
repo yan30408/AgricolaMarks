@@ -31,6 +31,8 @@ export const defaultResult = {
     outside: 0,
     total: -1
   },
+  ratingBefore: null,
+  ratingAfter: null,
   uid: -1,
   order: -1,
   color: null

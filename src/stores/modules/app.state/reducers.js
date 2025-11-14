@@ -2,12 +2,15 @@ import types from "./types";
 import produce from "immer";
 //import reduceReducer from "reduce-reducers";
 //import { enableBatching } from "redux-batched-actions";
+import { DEFAULT_GAME_MODE } from "Constants";
 
 const { APP_STATE_MUTATE } = types;
 
 const initialState = {
   uid: null,
   isAnonymous: null,
+  isAdmin: false,
+  gameMode: DEFAULT_GAME_MODE,
 
   currentOrder: 0,
   isOpenMenu: false,

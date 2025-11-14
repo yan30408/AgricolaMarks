@@ -1,18 +1,74 @@
 import actions from "./actions";
 import { auth, providers } from "initializer";
 import { saveUser } from "../entities.users/operations";
+import { DEFAULT_GAME_MODE } from "Constants";
 
 export const appStateMutate = actions.appStateMutate;
 
-export const subscribeUserState = () => (dispatch, _) => {
+export const subscribeUserState = () => dispatch => {
+  let unsubscribeTokenListener = null;
+
+  const detachTokenListener = () => {
+    if (typeof unsubscribeTokenListener === "function") {
+      unsubscribeTokenListener();
+      unsubscribeTokenListener = null;
+    }
+  };
+
+  const updateAdminFlag = async user => {
+    if (!user) {
+      dispatch(
+        appStateMutate(draft => {
+          draft.isAdmin = false;
+        })
+      );
+      return;
+    }
+    try {
+      const token = await user.getIdTokenResult();
+      const isAdmin = Boolean(token?.claims?.admin);
+      dispatch(
+        appStateMutate(draft => {
+          draft.isAdmin = isAdmin;
+        })
+      );
+    } catch (error) {
+      console.error("Failed to read custom claims", error);
+      dispatch(
+        appStateMutate(draft => {
+          draft.isAdmin = false;
+        })
+      );
+    }
+  };
+
+  const attachTokenListener = user => {
+    detachTokenListener();
+    if (!user) {
+      dispatch(
+        appStateMutate(draft => {
+          draft.isAdmin = false;
+        })
+      );
+      return;
+    }
+    unsubscribeTokenListener = auth.onIdTokenChanged(async currentUser => {
+      if (!currentUser) {
+        dispatch(
+          appStateMutate(draft => {
+            draft.isAdmin = false;
+          })
+        );
+        return;
+      }
+      await updateAdminFlag(currentUser);
+    });
+    updateAdminFlag(user);
+  };
+
   const unsubscribe = auth.onAuthStateChanged(function(user) {
     if (user) {
-      // User is signed in.
       const uid = user.uid;
-      // const displayName = user.displayName;
-      // var email = user.email;
-      // var emailVerified = user.emailVerified;
-      // const photoUrl = user.photoURL;
       const isAnonymous = user.isAnonymous;
       const providerData = user.providerData;
       if (providerData[0]?.displayName) {
@@ -27,43 +83,76 @@ export const subscribeUserState = () => (dispatch, _) => {
           draft.isAnonymous = isAnonymous;
         })
       );
+      attachTokenListener(user);
       getRedirectResult(dispatch);
     } else {
-      //auth.signInAnonymously(); // force login
+      detachTokenListener();
       dispatch(
         appStateMutate(draft => {
           draft.uid = null;
           draft.isAnonymous = true;
+          draft.isAdmin = false;
+          draft.gameMode = DEFAULT_GAME_MODE;
         })
       );
     }
   });
-  return () => unsubscribe();
+  return () => {
+    detachTokenListener();
+    unsubscribe();
+  };
 };
 
 const getRedirectResult = async dispatch => {
-  const result = await auth.getRedirectResult();
-  if (result && result.user && result.user.providerData[0]) {
+  try {
+    const result = await auth.getRedirectResult();
+    if (!result || !result.user) {
+      return;
+    }
+
+    const profile = result.user.providerData?.[0];
+    if (!profile) {
+      return;
+    }
+
+    const twitterId =
+      result.additionalUserInfo?.username || profile.screenName || null;
+
+    if (profile.displayName || profile.photoURL) {
+      await result.user.updateProfile({
+        displayName: profile.displayName || result.user.displayName,
+        photoURL: profile.photoURL || result.user.photoURL
+      });
+    }
+
     dispatch(
       saveUser({
         uid: result.user.uid,
-        displayName: result.user.providerData[0].displayName,
-        photoUrl: result.user.providerData[0].photoURL,
-        twitterId: result.additionalUserInfo.username
+        displayName: profile.displayName || result.user.displayName,
+        photoUrl: profile.photoURL || result.user.photoURL,
+        twitterId
       })
     );
+  } catch (error) {
+    console.error("Failed to handle redirect result", error);
   }
 };
 
 export const signInWithTwitter = () => async () => {
-  const result = await auth.getRedirectResult();
-  if (result && result.user && result.user.providerData[0]) {
-    result.user.updateProfile({
-      displayName: result.user.providerData[0].displayName,
-      photoURL: result.user.providerData[0].photoURL
-    });
-  } else {
-    auth.signInWithRedirect(providers.twitter);
+  try {
+    const result = await auth.getRedirectResult();
+    if (result && result.user && result.user.providerData?.[0]) {
+      const profile = result.user.providerData[0];
+      await result.user.updateProfile({
+        displayName: profile.displayName || result.user.displayName,
+        photoURL: profile.photoURL || result.user.photoURL
+      });
+      return;
+    }
+    return auth.signInWithRedirect(providers.twitter);
+  } catch (error) {
+    console.error("Twitter sign-in failed", error);
+    throw error;
   }
 };
 

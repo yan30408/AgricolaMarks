@@ -1,104 +1,83 @@
-import types from "./types";
-import { combineReducers } from "redux";
-import { createByIdReducer, createIndexReducer } from "../firestoreModuleUtils";
-import { format } from "date-fns";
-import produce from "immer";
-import { enableBatching } from "redux-batched-actions";
+import {
+  RESULTS_FETCH_REQUEST,
+  RESULTS_FETCH_SUCCESS,
+  RESULTS_FETCH_FAILURE,
+  RESULTS_RESET
+} from "./types";
 
-const byId = createByIdReducer(types);
-const allIds = createIndexReducer(types);
-
-const getDailyKey = action => {
-  const date = action.data.date;
-  if (date) {
-    const key = format(
-      new Date(date.seconds * 1000 + date.nanoseconds / 1000000),
-      "yyyy/MM/dd"
-    );
-    return key;
-  }
-  return null;
+const initialState = {
+  byId: {},
+  orderedIds: [],
+  cursor: null,
+  hasMore: true,
+  loading: false,
+  error: null,
+  filters: {},
+  initialized: false
 };
 
-const dailyReducer = enableBatching((state = {}, action) => {
-  switch (action.type) {
-    case types.INIT: {
-      return {};
-    }
-    case types.REMOVE: {
-      const key = getDailyKey(action);
-      if (key) {
-        return produce(state, draft => {
-          delete draft[key];
-        });
-      }
-      return state;
-    }
-    case types.ADD:
-    case types.UPDATE: {
-      const key = getDailyKey(action);
-      if (key) {
-        return produce(state, draft => {
-          if (!(`${key}` in draft)) {
-            draft[key] = [];
-          }
-          if (!draft[key].includes(action.id)) {
-            draft[key].push(action.id);
-          }
-        });
-      }
-      return state;
-    }
-    default: {
-      return state;
-    }
+const ensureUniquePush = (array, value) => {
+  if (!array.includes(value)) {
+    array.push(value);
   }
-});
-
-const getUserKeys = action => {
-  return action.data.results.map(result => result.uid);
 };
 
-const userlyReducer = enableBatching((state = {}, action) => {
+export default function reducer(state = initialState, action = {}) {
   switch (action.type) {
-    case types.INIT: {
-      return {};
-    }
-    case types.REMOVE: {
-      const keys = getUserKeys(action);
-      if (keys) {
-        return produce(state, draft => {
-          keys.forEach(key => delete draft[key]);
-        });
+    case RESULTS_FETCH_REQUEST: {
+      const { reset = false, filters = {} } = action.payload || {};
+      if (reset) {
+        return {
+          ...initialState,
+          loading: true,
+          filters
+        };
       }
-      return state;
+      return {
+        ...state,
+        loading: true,
+        error: null,
+        filters: Object.keys(filters).length ? filters : state.filters
+      };
     }
-    case types.ADD:
-    case types.UPDATE: {
-      const keys = getUserKeys(action);
-      if (keys) {
-        return produce(state, draft => {
-          keys.forEach(key => {
-            if (!(`${key}` in draft)) {
-              draft[key] = [];
-            }
-            if (!draft[key].includes(action.id)) {
-              draft[key].push(action.id);
-            }
-          });
-        });
-      }
-      return state;
-    }
-    default: {
-      return state;
-    }
-  }
-});
+    case RESULTS_FETCH_SUCCESS: {
+      const { items = [], cursor = null, hasMore = true } =
+        action.payload || {};
+      const byId = { ...state.byId };
+      const orderedIds = [...state.orderedIds];
 
-export default combineReducers({
-  byId,
-  allIds,
-  dailyReducer,
-  userlyReducer
-});
+      items.forEach(item => {
+        if (!item || !item._id) {
+          return;
+        }
+        byId[item._id] = item;
+        ensureUniquePush(orderedIds, item._id);
+      });
+
+      return {
+        ...state,
+        loading: false,
+        error: null,
+        byId,
+        orderedIds,
+        cursor,
+        hasMore,
+        initialized: true
+      };
+    }
+    case RESULTS_FETCH_FAILURE: {
+      return {
+        ...state,
+        loading: false,
+        error: action.payload || "failed to fetch results"
+      };
+    }
+    case RESULTS_RESET: {
+      return initialState;
+    }
+    default:
+      return state;
+  }
+}
+
+export { initialState };
