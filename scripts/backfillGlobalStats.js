@@ -194,10 +194,7 @@ async function main() {
   console.log(`Processing ${snapshot.size} result documents...`);
 
   let matchCount = 0;
-  let totalPlays = 0;
-  const rankHistogram = emptyRankCounts();
   const orderHistogram = emptyOrderHistogram();
-  const colorCounts = {};
 
   snapshot.forEach(doc => {
     const data = doc.data() || {};
@@ -214,12 +211,8 @@ async function main() {
     }
 
     matchCount += 1;
-    totalPlays += relevant.length;
 
     relevant.forEach(entry => {
-      const rankKey = normalizeRank(entry.rank);
-      rankHistogram[rankKey] = (rankHistogram[rankKey] || 0) + 1;
-
       const orderKey = normalizeOrder(entry.order);
       const bucket = orderHistogram[orderKey] || emptyOrderBucket();
       bucket.plays += 1;
@@ -227,32 +220,21 @@ async function main() {
         bucket.wins += 1;
       }
       const counts = bucket.rankCounts || emptyRankCounts();
+      const rankKey = normalizeRank(entry.rank);
       counts[rankKey] = (counts[rankKey] || 0) + 1;
       bucket.rankCounts = counts;
       orderHistogram[orderKey] = bucket;
-
-      if (entry.color) {
-        colorCounts[entry.color] = (colorCounts[entry.color] || 0) + 1;
-      }
     });
   });
 
-  await db.doc("stats/global").set(
-    {
-      matchCount,
-      totalPlays,
-      rankHistogram,
-      orderHistogram,
-      colorCounts,
-      type: "summary",
-      updatedAt: FieldValue.serverTimestamp()
-    },
-    { merge: true }
-  );
+  await db.doc("stats/global").set({
+    matchCount,
+    orderHistogram,
+    type: "summary",
+    updatedAt: FieldValue.serverTimestamp()
+  });
 
-  console.log(
-    `Global stats updated. Matches counted: ${matchCount}, total plays considered: ${totalPlays}`
-  );
+  console.log(`Global stats updated. Matches counted: ${matchCount}`);
 }
 
 main().catch(error => {

@@ -777,16 +777,6 @@ function normalizeOrder(order) {
   return "unknown";
 }
 
-function emptyRankHistogram() {
-  return {
-    "1": 0,
-    "2": 0,
-    "3": 0,
-    "4": 0,
-    "5": 0
-  };
-}
-
 function emptyRankCounts() {
   return {
     "1": 0,
@@ -834,9 +824,7 @@ async function applyGlobalChange(entries, operation, adjustMatchCount) {
       : createEmptyGlobalStats();
     const delta = operation === "add" ? 1 : -1;
 
-    const rankHistogram = existing.rankHistogram || emptyRankHistogram();
     const orderHistogram = existing.orderHistogram || emptyOrderHistogram();
-    const colorCounts = existing.colorCounts || {};
 
     let matchCount = existing.matchCount || 0;
     if (adjustMatchCount && relevantEntries.length) {
@@ -844,17 +832,9 @@ async function applyGlobalChange(entries, operation, adjustMatchCount) {
     }
     matchCount = Math.max(matchCount, 0);
 
-    let totalPlays =
-      (existing.totalPlays || 0) + delta * relevantEntries.length;
-    totalPlays = Math.max(totalPlays, 0);
-
     existing.matchCount = matchCount;
-    existing.totalPlays = totalPlays;
 
     relevantEntries.forEach(entry => {
-      const rankKey = normalizeRank(entry.rank);
-      rankHistogram[rankKey] = (rankHistogram[rankKey] || 0) + delta;
-
       const orderKey = normalizeOrder(entry.order);
       const orderBucket = orderHistogram[orderKey] || {
         plays: 0,
@@ -866,27 +846,17 @@ async function applyGlobalChange(entries, operation, adjustMatchCount) {
         orderBucket.wins += delta;
       }
       const rankCounts = orderBucket.rankCounts || emptyRankCounts();
+      const rankKey = normalizeRank(entry.rank);
       rankCounts[rankKey] = (rankCounts[rankKey] || 0) + delta;
       orderBucket.rankCounts = rankCounts;
       orderHistogram[orderKey] = orderBucket;
-
-      if (entry.color) {
-        colorCounts[entry.color] = (colorCounts[entry.color] || 0) + delta;
-        if (colorCounts[entry.color] <= 0) {
-          delete colorCounts[entry.color];
-        }
-      }
     });
 
-    sanitizeHistogram(rankHistogram);
     sanitizeOrderHistogram(orderHistogram);
 
     tx.set(docRef, {
       matchCount,
-      totalPlays,
-      rankHistogram,
       orderHistogram,
-      colorCounts,
       type: "summary",
       updatedAt: FieldValue.serverTimestamp()
     });
@@ -896,19 +866,8 @@ async function applyGlobalChange(entries, operation, adjustMatchCount) {
 function createEmptyGlobalStats() {
   return {
     matchCount: 0,
-    totalPlays: 0,
-    rankHistogram: emptyRankHistogram(),
-    orderHistogram: emptyOrderHistogram(),
-    colorCounts: {}
+    orderHistogram: emptyOrderHistogram()
   };
-}
-
-function sanitizeHistogram(histogram) {
-  Object.keys(histogram).forEach(key => {
-    if (histogram[key] < 0) {
-      histogram[key] = 0;
-    }
-  });
 }
 
 function sanitizeOrderHistogram(histogram) {
