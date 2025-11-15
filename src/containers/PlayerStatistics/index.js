@@ -24,7 +24,9 @@ import {
   AppBar,
   Typography,
   Slide,
-  Paper
+  Paper,
+  TextField,
+  MenuItem
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import MergeIcon from "@mui/icons-material/PeopleAlt";
@@ -42,7 +44,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 
-import { Colors, Orders, DEFAULT_GAME_MODE } from "Constants";
+import { Colors, Orders, GameModes, DEFAULT_GAME_MODE } from "Constants";
 import AlertDialog from "components/AlertDialog";
 import ResultRecord from "containers/ResultList/ResultRecord";
 
@@ -126,7 +128,10 @@ const renderTooltipContent = ({ payload }) => {
 const PlayerStatistics = props => {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const { open, uid } = props;
+  const { open, uid, mode: requestedMode, onChangeMode: onModeChange } = props;
+  const [currentMode, setCurrentMode] = useState(
+    requestedMode || DEFAULT_GAME_MODE
+  );
 
   const user = useSelector(state => store.getUserById(state, uid));
   const createdByTwitterId = useSelector(state => {
@@ -138,7 +143,13 @@ const PlayerStatistics = props => {
     : null;
 
   const rawStats = useSelector(state => store.getUserStatsById(state, uid));
-  const statistics = rawStats || EMPTY_STATS;
+  const statistics =
+    rawStats && (!rawStats.mode || rawStats.mode === currentMode)
+      ? rawStats
+      : EMPTY_STATS;
+  const summary = useSelector(state =>
+    store.getUserStatsSummaryById(state, uid)
+  );
 
   const myUid = useSelector(state => store.getAppState(state, "uid"));
   const isAnonymous = useSelector(state =>
@@ -151,9 +162,25 @@ const PlayerStatistics = props => {
   const [openMerge, setOpenMerge] = useState(false);
   const statsRequestRef = useRef(false);
 
-  const favoriteColor = statistics.favoriteColor;
+  const modeSummary = summary?.modes?.[currentMode] || null;
+  const favoriteColor = summary?.favoriteColor || null;
   const accentColor = Colors[favoriteColor]?.main || DEFAULT_MAIN_COLOR;
   const backgroundColor = Colors[favoriteColor]?.sub || DEFAULT_SUB_COLOR;
+
+  useEffect(() => {
+    setCurrentMode(requestedMode || DEFAULT_GAME_MODE);
+  }, [requestedMode, uid]);
+
+  const handleModeChange = useCallback(
+    event => {
+      const value = event.target.value;
+      setCurrentMode(value);
+      if (typeof onModeChange === "function") {
+        onModeChange(value);
+      }
+    },
+    [onModeChange]
+  );
 
   useEffect(() => {
     if (!open || !uid) return;
@@ -164,7 +191,12 @@ const PlayerStatistics = props => {
     statsRequestRef.current = setTimeout(() => {
       dispatch(
         store.fetchUserStatsById(uid, {
-          gameMode: DEFAULT_GAME_MODE
+          gameMode: currentMode
+        })
+      );
+      dispatch(
+        store.fetchUserStatsSummaryById(uid, {
+          modes: [currentMode]
         })
       );
     }, 200);
@@ -174,7 +206,7 @@ const PlayerStatistics = props => {
         statsRequestRef.current = null;
       }
     };
-  }, [open, uid, dispatch]);
+  }, [open, uid, dispatch, currentMode]);
 
   const rankData = useMemo(() => {
     const histogram = statistics.rankHistogram || {};
@@ -246,6 +278,9 @@ const PlayerStatistics = props => {
       await dispatch(
         store.fetchUserStatsById(myUid, { gameMode: DEFAULT_GAME_MODE })
       );
+      await dispatch(
+        store.fetchUserStatsSummaryById(myUid, { modes: [DEFAULT_GAME_MODE] })
+      );
       props.onClose(true);
     } catch (error) {
       console.error("Failed to merge user accounts", error);
@@ -279,6 +314,7 @@ const PlayerStatistics = props => {
         open={open}
         onClose={props.onClose}
         TransitionComponent={Transition}
+        disableRestoreFocus
       >
         <AppBar className={classes.appBar}>
           <Toolbar>
@@ -296,6 +332,25 @@ const PlayerStatistics = props => {
         </AppBar>
         <DialogContent style={{ backgroundColor }}>
           <List>
+            <ListItem divider>
+              <TextField
+                select
+                label="ゲームモード"
+                variant="outlined"
+                value={currentMode}
+                onChange={handleModeChange}
+                InputLabelProps={{
+                  shrink: true
+                }}
+                fullWidth
+              >
+                {Object.entries(GameModes).map(([modeKey, meta]) => (
+                  <MenuItem key={modeKey} value={modeKey}>
+                    {meta.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </ListItem>
             <ListItem divider>
               <ListItemAvatar>
                 <Avatar
@@ -319,18 +374,14 @@ const PlayerStatistics = props => {
               ) : null}
             </ListItem>
             <ListItem divider>
-              <ListItemText
-                primary={<Typography noWrap>プレイ回数</Typography>}
-              />
+              <ListItemText primary="プレイ回数" />
               <div className={classes.spacer} />
               <Typography variant="subtitle2" noWrap>
                 {playCount} 回
               </Typography>
             </ListItem>
             <ListItem divider>
-              <ListItemText
-                primary={<Typography noWrap>レーティング</Typography>}
-              />
+              <ListItemText primary="レーティング" />
               <div className={classes.spacer} />
               <Typography variant="subtitle2" noWrap>
                 {rating != null ? rating : "-"}

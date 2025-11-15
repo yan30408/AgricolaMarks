@@ -22,7 +22,9 @@ import {
   TextField,
   InputAdornment,
   BottomNavigation,
-  BottomNavigationAction
+  BottomNavigationAction,
+  MenuItem,
+  Box
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -32,6 +34,7 @@ import ScoreAveIcon from "@mui/icons-material/TrendingUp";
 import BakushiIcon from "@mui/icons-material/FlashOn";
 import RatingIcon from "@mui/icons-material/Leaderboard";
 
+import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 import UserListItem from "./UserListItem";
 import PlayerStatistics from "containers/PlayerStatistics";
 
@@ -69,7 +72,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const DEFAULT_MODE = "classic";
+const DEFAULT_MODE = DEFAULT_GAME_MODE;
 const MIN_REQUIRED_PLAYS = 10;
 
 const getAverageScore = stats => {
@@ -79,7 +82,8 @@ const getAverageScore = stats => {
   return stats.scoreTotal / stats.playCount;
 };
 
-const compareStatistics = (a, b, type) => {
+const compareStatistics = (a, b, type, options = {}) => {
+  const now = options.now || Date.now();
   switch (type) {
     case "playCount":
       return (b?.playCount || 0) - (a?.playCount || 0);
@@ -114,9 +118,12 @@ const PlayerList = props => {
   const [playerNameText, setPlayerNameText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [statisticsType, setStatisticsType] = useState("playCount");
+  const [selectedMode, setSelectedMode] = useState(DEFAULT_MODE);
   const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
   const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
   const timer = useRef(null);
+  const dialogPaperRef = useRef(null);
+  const scrollPositionRef = useRef(0);
 
   const open = useSelector(state =>
     store.getAppState(state, "isOpenPlayerList")
@@ -128,13 +135,14 @@ const PlayerList = props => {
     store.getAllUserStatsSummary(state)
   );
   const sortedUserIds = useMemo(() => {
+    const now = Date.now();
     const candidates = [...filteredUserIds];
     return candidates.sort((a, b) => {
-      const statsA = allStatistics[a]?.modes?.[DEFAULT_MODE] || null;
-      const statsB = allStatistics[b]?.modes?.[DEFAULT_MODE] || null;
-      return compareStatistics(statsA, statsB, statisticsType);
+      const statsA = allStatistics[a]?.modes?.[selectedMode] || null;
+      const statsB = allStatistics[b]?.modes?.[selectedMode] || null;
+      return compareStatistics(statsA, statsB, statisticsType, { now });
     });
-  }, [statisticsType, filteredUserIds, allStatistics]);
+  }, [statisticsType, filteredUserIds, allStatistics, selectedMode]);
 
   const onClose = useCallback(() => {
     d(
@@ -155,13 +163,53 @@ const PlayerList = props => {
       setSearchText(text);
     }, 500);
   }, []);
-  const onSelect = useCallback(id => {
-    setIsOpenPlayerStatistics(true);
-    setIsOpenPlayerStatisticsId(id);
+  const applyMode = useCallback(mode => {
+    setSelectedMode(prev => (prev === mode ? prev : mode));
   }, []);
-  const onDeselect = useCallback(allClose => {
-    setIsOpenPlayerStatistics(false);
+  const onChangeMode = useCallback(
+    event => {
+      applyMode(event.target.value);
+    },
+    [applyMode]
+  );
+  const captureScrollPosition = useCallback(() => {
+    if (dialogPaperRef.current) {
+      scrollPositionRef.current = dialogPaperRef.current.scrollTop;
+      return;
+    }
+    if (typeof window !== "undefined") {
+      scrollPositionRef.current = window.pageYOffset || 0;
+    }
   }, []);
+  const restoreScrollPosition = useCallback(() => {
+    const target = dialogPaperRef.current;
+    if (target) {
+      target.scrollTop = scrollPositionRef.current;
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, scrollPositionRef.current || 0);
+    }
+  }, []);
+  const onSelect = useCallback(
+    id => {
+      captureScrollPosition();
+      setIsOpenPlayerStatistics(true);
+      setIsOpenPlayerStatisticsId(id);
+    },
+    [captureScrollPosition]
+  );
+  const onDeselect = useCallback(
+    allClose => {
+      setIsOpenPlayerStatistics(false);
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(restoreScrollPosition);
+      } else {
+        restoreScrollPosition();
+      }
+    },
+    [restoreScrollPosition]
+  );
 
   useEffect(() => {
     if (!open) {
@@ -170,11 +218,11 @@ const PlayerList = props => {
     filteredUserIds.forEach(uid => {
       d(
         store.fetchUserStatsSummaryById(uid, {
-          modes: [DEFAULT_MODE]
+          modes: [selectedMode]
         })
       );
     });
-  }, [open, filteredUserIds, d]);
+  }, [open, filteredUserIds, d, selectedMode]);
 
   useEffect(() => {
     return () => clearTimeout(timer.current);
@@ -187,6 +235,7 @@ const PlayerList = props => {
         open={open}
         onClose={onClose}
         TransitionComponent={Transition}
+        PaperProps={{ ref: dialogPaperRef }}
       >
         <AppBar className={classes.appBar}>
           <Toolbar>
@@ -200,32 +249,51 @@ const PlayerList = props => {
         </AppBar>
         <List className={classes.list}>
           <ListItem>
-            <TextField
-              label="プレイヤー名"
-              variant="outlined"
-              fullWidth
-              value={playerNameText}
-              onChange={onChange}
-              placeholder="プレイヤーの検索"
-              InputLabelProps={{
-                shrink: true
-              }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={onCancel} edge="end">
-                      <CancelIcon />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
+            <Box sx={{ display: "flex", width: "100%", gap: 1 }}>
+              <TextField
+                label="プレイヤー検索"
+                variant="outlined"
+                fullWidth
+                value={playerNameText}
+                onChange={onChange}
+                placeholder="プレイヤー名"
+                InputLabelProps={{
+                  shrink: true
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={onCancel} edge="end">
+                        <CancelIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+              <TextField
+                select
+                label="ゲームモード"
+                variant="outlined"
+                value={selectedMode}
+                onChange={onChangeMode}
+                InputLabelProps={{
+                  shrink: true
+                }}
+                sx={{ minWidth: 150 }}
+              >
+                {Object.entries(GameModes).map(([modeKey, meta]) => (
+                  <MenuItem key={modeKey} value={modeKey}>
+                    {meta.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
           </ListItem>
           {sortedUserIds.map(uid => (
             <UserListItem
               key={uid}
               uid={uid}
-              mode={DEFAULT_MODE}
+              mode={selectedMode}
               statisticsType={statisticsType}
               onSelect={onSelect}
             />
@@ -268,6 +336,8 @@ const PlayerList = props => {
         open={isOpenPlayerStatistics}
         uid={isOpenPlayerStatisticsId}
         onClose={onDeselect}
+        mode={selectedMode}
+        onChangeMode={applyMode}
       />
     </>
   );
