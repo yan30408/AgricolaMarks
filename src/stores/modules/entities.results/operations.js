@@ -40,34 +40,41 @@ const toPlainTimestamp = timestamp => {
 
 const normalizeResultDoc = doc => {
   const data = doc.data() || {};
-  const dateTimestamp = toTimestamp(data.date);
-  const playedAtTimestamp = toTimestamp(data.playedAt || dateTimestamp);
-  return {
+  const playedAtTimestamp = toTimestamp(data.playedAt || data.date);
+  const normalized = {
     ...data,
+    results: Array.isArray(data.results) ? data.results : [],
     playedAt: playedAtTimestamp,
-    date: dateTimestamp,
     participantCount: Array.isArray(data.results) ? data.results.length : 0,
     gameMode: data.gameMode || DEFAULT_GAME_MODE,
     _id: doc.id,
     _path: doc.ref.path
   };
+  delete normalized.date;
+  return normalized;
 };
 
 const buildCursor = lastDoc => {
   if (!lastDoc) return null;
   const data = lastDoc.data() || {};
-  const date = toTimestamp(data.date);
+  const playedAt = toTimestamp(data.playedAt || data.date);
+  const plain = toPlainTimestamp(playedAt);
+  if (!plain) {
+    return {
+      docId: lastDoc.id
+    };
+  }
   return {
     docId: lastDoc.id,
-    date: toPlainTimestamp(date)
+    playedAt: plain
   };
 };
 
 const shouldUseCursor = cursor =>
   cursor &&
   cursor.docId &&
-  cursor.date &&
-  typeof cursor.date.seconds === "number";
+  cursor.playedAt &&
+  typeof cursor.playedAt.seconds === "number";
 
 export const resetResults = () => dispatch => {
   dispatch(resetResultsState());
@@ -93,7 +100,7 @@ export const fetchResultsPage = ({
 
   try {
     let query = resultsRef
-      .orderBy("date", "desc")
+      .orderBy("playedAt", "desc")
       .orderBy(FieldPath.documentId(), "desc")
       .limit(limit);
 
@@ -104,8 +111,11 @@ export const fetchResultsPage = ({
     if (!reset) {
       const cursor = state.cursor;
       if (shouldUseCursor(cursor)) {
-        const { date, docId } = cursor;
-        const timestamp = new Timestamp(date.seconds, date.nanoseconds || 0);
+        const { playedAt, docId } = cursor;
+        const timestamp = new Timestamp(
+          playedAt.seconds,
+          playedAt.nanoseconds || 0
+        );
         query = query.startAfter(timestamp, docId);
       } else if (cursor?.docId) {
         query = query.startAfter(cursor.docId);
@@ -132,9 +142,8 @@ export const fetchResultsPage = ({
 
 const prepareWritePayload = data => {
   const playedAtTimestamp =
-    toTimestamp(data.date) || Timestamp.fromDate(new Date());
+    toTimestamp(data.playedAt || data.date) || Timestamp.fromDate(new Date());
   return {
-    date: playedAtTimestamp,
     playedAt: playedAtTimestamp,
     participantCount: Array.isArray(data.results) ? data.results.length : 0,
     results: data.results || [],

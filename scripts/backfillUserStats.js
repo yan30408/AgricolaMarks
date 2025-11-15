@@ -60,7 +60,7 @@ async function main() {
         statsRef,
         {
           gameMode: entry.gameMode,
-          playedAt: entry.date || null,
+          playedAt: entry.playedAt || entry.date || null,
           order: entry.order,
           participantCount: entry.participantCount,
           rank: entry.rank,
@@ -144,7 +144,7 @@ function buildEntries(resultId, snapshot) {
       order: Number.isInteger(player.order) ? player.order : null,
       score: player.score?.total || 0,
       color: player.color || null,
-      date: matchDate,
+      playedAt: matchDate,
       participantCount,
       gameMode,
       resultId,
@@ -212,7 +212,7 @@ function buildSummary(entries) {
 
 function accumulateMode(summary, entry) {
   const score = Number.isFinite(entry.score) ? entry.score : 0;
-  const playedAt = entry.date || null;
+  const playedAt = entry.playedAt || entry.date || null;
   const entryMillis = toMillis(playedAt);
 
   summary.playCount += 1;

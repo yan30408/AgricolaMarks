@@ -26,6 +26,21 @@ import ResultDetail from "containers/ResultDetail";
 import { format } from "date-fns";
 import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 
+const toDate = value => {
+  if (!value) return null;
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  if (value?.seconds !== undefined) {
+    return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
 });
@@ -121,10 +136,10 @@ const ResultRecord = props => {
   );
 
   if (!result) return null;
-  const date = format(
-    new Date(result.date.seconds * 1000 + result.date.nanoseconds / 1000000),
-    "yyyy.MM.dd - HH:mm:ss"
-  );
+  const playedAtDate = toDate(result.playedAt || result.date);
+  const date = playedAtDate
+    ? format(playedAtDate, "yyyy.MM.dd - HH:mm:ss")
+    : "-";
   const gameMode = result.gameMode || DEFAULT_GAME_MODE;
   const gameModeLabel = GameModes[gameMode]?.label || gameMode;
 

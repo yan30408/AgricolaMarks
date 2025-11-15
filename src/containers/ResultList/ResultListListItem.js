@@ -12,6 +12,21 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { format } from "date-fns";
 
+const toDate = value => {
+  if (!value) return null;
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  if (value?.seconds !== undefined) {
+    return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const useStyles = makeStyles({
   spacer: {
     flexGrow: 1
@@ -42,10 +57,8 @@ const ResultListListItem = props => {
     props.onSelect(props.resultId);
   }, [props.onSelect, props.resultId]);
   if (!result) return null;
-  const time = format(
-    new Date(result.date.seconds * 1000 + result.date.nanoseconds / 1000000),
-    "HH:mm"
-  );
+  const playedAtDate = toDate(result.playedAt || result.date);
+  const time = playedAtDate ? format(playedAtDate, "HH:mm") : "";
 
   return (
     <>

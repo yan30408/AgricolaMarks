@@ -112,14 +112,14 @@ function buildSummary(entries) {
       highestScore = {
         resultId: entry.resultId,
         score: totalScore,
-        date: playedAt
+        playedAt
       };
     }
     if (!lowestScore || totalScore < lowestScore.score) {
       lowestScore = {
         resultId: entry.resultId,
         score: totalScore,
-        date: playedAt
+        playedAt
       };
     }
 
@@ -127,11 +127,13 @@ function buildSummary(entries) {
       resultId: entry.resultId,
       rank: numericRank,
       score: totalScore,
-      date: playedAt
+      playedAt
     });
   });
 
-  recentResults.sort((a, b) => toMillis(b.date) - toMillis(a.date));
+  recentResults.sort(
+    (a, b) => toMillis(b.playedAt || b.date) - toMillis(a.playedAt || a.date)
+  );
 
   return {
     playCount,

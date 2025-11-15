@@ -83,30 +83,41 @@ const EMPTY_STATS = {
   rating: null
 };
 
-const getDate = date => {
-  if (!date) return null;
-  return format(
-    new Date(date.seconds * 1000 + date.nanoseconds / 1000000),
-    "yyyy/MM/dd - HH:mm"
-  );
+const toDateValue = value => {
+  if (!value) return null;
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  if (typeof value.toMillis === "function") {
+    return new Date(value.toMillis());
+  }
+  if (value?.seconds !== undefined) {
+    return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const toMillis = date => {
-  if (!date) return 0;
-  if (typeof date.toMillis === "function") {
-    return date.toMillis();
-  }
-  if (date.seconds !== undefined) {
-    return date.seconds * 1000 + (date.nanoseconds || 0) / 1e6;
-  }
-  return Number(date) || 0;
+const formatPlayedAt = value => {
+  const date = toDateValue(value);
+  return date ? format(date, "yyyy/MM/dd - HH:mm") : null;
+};
+
+const toMillis = value => {
+  const date = toDateValue(value);
+  return date ? date.getTime() : 0;
 };
 
 const renderTooltipContent = ({ payload }) => {
   return (
     <Paper style={{ padding: "5px 10px" }}>
       <Typography variant="caption" noWrap>
-        {payload?.length > 0 ? getDate(payload[0].payload.date) : null}
+        {payload?.length > 0
+          ? formatPlayedAt(payload[0].payload.playedAt)
+          : null}
       </Typography>
     </Paper>
   );
@@ -197,7 +208,10 @@ const PlayerStatistics = props => {
       return [];
     }
     return [...recent]
-      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
+      .sort(
+        (a, b) =>
+          toMillis(b.playedAt || b.date) - toMillis(a.playedAt || a.date)
+      )
       .slice(0, 5)
       .map(entry => ({
         id: entry.resultId,
@@ -205,7 +219,7 @@ const PlayerStatistics = props => {
           RANK_LABELS[(entry.rank || 1) - 1] ||
           RANK_LABELS[RANK_LABELS.length - 1],
         rank: entry.rank || RANK_LABELS.length,
-        date: entry.date
+        playedAt: entry.playedAt || entry.date || null
       }))
       .reverse();
   }, [statistics.recentResults]);
@@ -390,7 +404,9 @@ const PlayerStatistics = props => {
             <ListItem divider>
               <ListItemText
                 primary={<Typography noWrap>最高得点</Typography>}
-                secondary={highestScore ? getDate(highestScore.date) : "-"}
+                secondary={
+                  highestScore ? formatPlayedAt(highestScore.playedAt) : "-"
+                }
               />
               <div className={classes.spacer} />
               <Typography variant="subtitle2" noWrap>
@@ -400,7 +416,9 @@ const PlayerStatistics = props => {
             <ListItem divider>
               <ListItemText
                 primary={<Typography noWrap>最低得点</Typography>}
-                secondary={lowestScore ? getDate(lowestScore.date) : "-"}
+                secondary={
+                  lowestScore ? formatPlayedAt(lowestScore.playedAt) : "-"
+                }
               />
               <div className={classes.spacer} />
               <Typography variant="subtitle2" noWrap>

@@ -179,7 +179,7 @@ function buildEntries(resultId, snapshot) {
       order: Number.isInteger(player.order) ? player.order : null,
       score: player.score?.total || 0,
       color: player.color || null,
-      date: matchDate,
+      playedAt: matchDate,
       participantCount,
       gameMode
     }));

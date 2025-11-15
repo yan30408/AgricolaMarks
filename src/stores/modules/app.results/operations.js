@@ -42,7 +42,9 @@ export const appResultsApply = resultId => (dispatch, getState) => {
 
   dispatch(
     appStateMutate(state => {
-      state.resultDate = result.date.toDate();
+      state.resultDate = result.playedAt
+        ? result.playedAt.toDate()
+        : result.date?.toDate?.() || null;
       state.resultId = resultId;
       state.gameMode = result.gameMode || DEFAULT_GAME_MODE;
     })

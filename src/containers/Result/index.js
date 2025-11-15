@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   memo,
   useState,
   useCallback,
@@ -97,7 +97,7 @@ const FullScreenDialog = props => {
       if (resultId !== null) {
         d(
           store.updateResult(resultId, {
-            date: resultDate,
+            playedAt: resultDate,
             results: sanitizedResults,
             gameMode
           })
@@ -105,7 +105,7 @@ const FullScreenDialog = props => {
       } else {
         d(
           store.addResult({
-            date: resultDate,
+            playedAt: resultDate,
             results: sanitizedResults,
             gameMode
           })
