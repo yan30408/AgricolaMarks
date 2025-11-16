@@ -3,16 +3,17 @@ import { useSelector } from "react-redux";
 import store from "stores/interfaces";
 import { makeStyles } from "@mui/styles";
 import {
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemAvatar,
   Avatar,
+  ListItem,
+  ListItemAvatar,
+  ListItemIcon,
+  ListItemText,
   Typography
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { Orders, Colors } from "Constants";
+import { toEloRating } from "containers/PlayerList/ratingUtils";
 
 const useStyles = makeStyles({
   spacer: {
@@ -33,6 +34,38 @@ const ResultListItem = props => {
 
   if (!player) return null;
 
+  const scoreTotal = props.score?.total ?? 0;
+  const scoreInside = props.score?.inFarm ?? 0;
+  const scoreOutside = props.score?.outside ?? 0;
+
+  const ratingBefore =
+    typeof props.ratingBefore === "number"
+      ? toEloRating(props.ratingBefore)
+      : null;
+  const ratingAfter =
+    typeof props.ratingAfter === "number"
+      ? toEloRating(props.ratingAfter)
+      : null;
+  const ratingDelta =
+    ratingAfter !== null && ratingBefore !== null
+      ? ratingAfter - ratingBefore
+      : null;
+  const ratingDeltaLabel =
+    ratingDelta === null
+      ? "-"
+      : ratingDelta > 0
+      ? `+${ratingDelta}`
+      : `${ratingDelta}`;
+  const deltaColor =
+    ratingDelta === null
+      ? "textSecondary"
+      : ratingDelta > 0
+      ? "primary"
+      : ratingDelta < 0
+      ? "error"
+      : "textSecondary";
+  const ratingLabel = ratingAfter !== null ? String(ratingAfter) : "-";
+
   return (
     <div>
       <ListItem
@@ -52,23 +85,38 @@ const ResultListItem = props => {
         </ListItemAvatar>
         <ListItemText
           primary={
-            <Typography variant="h6" noWrap>
+            <Typography variant="body1" noWrap>
               {player.displayName}
             </Typography>
           }
           secondary={Orders[props.order]}
-          style={{ flex: 5 }}
+          style={{ flex: 3 }}
         />
         <ListItemText
+          style={{ flex: 4 }}
+          primary={
+            <Typography variant="body1" align="center" color="textSecondary">
+              {ratingLabel}
+            </Typography>
+          }
           secondary={
-            <Typography variant="inherit" align="left">
-              {`[ ${props.score.inFarm} + ${props.score.outside} ]`}
+            <Typography variant="body2" align="center" color={deltaColor}>
+              {ratingDeltaLabel}
             </Typography>
           }
         />
-        <ListItemText secondary={"→"} />
         <ListItemText
-          primary={<Typography variant="h5">{props.score.total}</Typography>}
+          style={{ flex: 3 }}
+          primary={
+            <Typography variant="h5" align="center">
+              {scoreTotal}
+            </Typography>
+          }
+          secondary={
+            <Typography variant="body2" align="center" color="textSecondary">
+              {`[ ${scoreInside} + ${scoreOutside} ]`}
+            </Typography>
+          }
         />
         <ListItemIcon className={classes.arrowForward}>
           <ArrowForwardIcon />

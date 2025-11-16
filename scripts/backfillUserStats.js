@@ -64,10 +64,7 @@ async function main() {
           order: entry.order,
           participantCount: entry.participantCount,
           rank: entry.rank,
-          color: entry.color || null,
           totalScore: entry.score,
-          ratingBefore: entry.ratingBefore,
-          ratingAfter: entry.ratingAfter,
           updatedAt: FieldValue.serverTimestamp()
         },
         { merge: true }
@@ -244,19 +241,24 @@ function accumulateMode(summary, entry) {
     };
   }
 
+  if (!summary.lastPlayedAt || entryMillis >= toMillis(summary.lastPlayedAt)) {
+    summary.lastPlayedAt = playedAt;
+    summary.lastResultId = entry.resultId;
+  }
+
   if (
     entry.ratingAfter !== null &&
     entry.ratingAfter !== undefined &&
     Number.isFinite(entry.ratingAfter)
   ) {
     if (
-      summary.lastRatingPlayedAt === null ||
-      entryMillis >= toMillis(summary.lastRatingPlayedAt) ||
-      summary._ratingSource !== "after"
+      summary._ratingMillis === null ||
+      entryMillis > summary._ratingMillis ||
+      (entryMillis === summary._ratingMillis &&
+        summary._ratingSource !== "after")
     ) {
       summary.rating = entry.ratingAfter;
-      summary.lastRatingPlayedAt = playedAt;
-      summary.lastRatingResultId = entry.resultId;
+      summary._ratingMillis = entryMillis;
       summary._ratingSource = "after";
     }
   } else if (
@@ -265,17 +267,14 @@ function accumulateMode(summary, entry) {
     Number.isFinite(entry.ratingBefore)
   ) {
     const shouldUpdate =
-      summary.lastRatingPlayedAt === null ||
-      entryMillis >= toMillis(summary.lastRatingPlayedAt);
-    const ratingAfterIsNewer =
-      summary._ratingSource === "after" &&
-      summary.lastRatingPlayedAt !== null &&
-      entryMillis < toMillis(summary.lastRatingPlayedAt);
+      summary._ratingMillis === null ||
+      entryMillis > summary._ratingMillis ||
+      (entryMillis === summary._ratingMillis &&
+        summary._ratingSource !== "after");
 
-    if (shouldUpdate && !ratingAfterIsNewer) {
+    if (shouldUpdate) {
       summary.rating = entry.ratingBefore;
-      summary.lastRatingPlayedAt = playedAt;
-      summary.lastRatingResultId = entry.resultId;
+      summary._ratingMillis = entryMillis;
       summary._ratingSource = "before";
     }
   }
@@ -293,12 +292,16 @@ function sanitizeModeSummary(summary) {
   }
   if (summary.rating !== null && !Number.isFinite(summary.rating)) {
     summary.rating = null;
-    summary.lastRatingPlayedAt = null;
-    summary.lastRatingResultId = null;
+  }
+  if (!summary.lastPlayedAt) {
+    summary.lastPlayedAt = null;
+  }
+  if (!summary.lastResultId) {
+    summary.lastResultId = null;
   }
   delete summary._ratingSource;
+  delete summary._ratingMillis;
   delete summary.favoriteColor;
-  delete summary.colorCounts;
 }
 
 function normalizeGameMode(value) {
@@ -323,9 +326,10 @@ function createEmptyModeSummary() {
     highestScore: null,
     lowestScore: null,
     rating: null,
-    lastRatingPlayedAt: null,
-    lastRatingResultId: null,
-    _ratingSource: null
+    lastPlayedAt: null,
+    lastResultId: null,
+    _ratingSource: null,
+    _ratingMillis: null
   };
 }
 

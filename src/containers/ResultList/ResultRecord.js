@@ -26,6 +26,9 @@ import ResultDetail from "containers/ResultDetail";
 import { format } from "date-fns";
 import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 
+const DEFAULT_RATING_LOCK_MESSAGE =
+  "現在レーティング再計算を実行中です。\n完了までお待ちください。";
+
 const toDate = value => {
   if (!value) return null;
   if (typeof value.toDate === "function") {
@@ -70,6 +73,25 @@ const ResultRecord = props => {
   const { open, resultId } = props;
   const result = useSelector(state => store.getResultById(state, resultId));
   const uid = useSelector(state => store.getAppState(state, "uid"));
+  const isRatingLocked = useSelector(state =>
+    Boolean(store.getAppState(state, "isRatingRebuildLocked"))
+  );
+  const ratingLockMessage =
+    useSelector(state => store.getAppState(state, "ratingRebuildMessage")) ||
+    DEFAULT_RATING_LOCK_MESSAGE;
+  const ratingLockMessageLines = useMemo(() => {
+    if (!ratingLockMessage) return [];
+    if (ratingLockMessage.includes("\n")) {
+      return ratingLockMessage
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+    }
+    return ratingLockMessage
+      .split(/(?<=。)/)
+      .map(line => line.trim())
+      .filter(Boolean);
+  }, [ratingLockMessage]);
   const [isOpenPlayerStatistics, setIsOpenPlayerStatistics] = useState(false);
   const [isOpenPlayerStatisticsId, setIsOpenPlayerStatisticsId] = useState("");
   const [openDetail, setOpenDetail] = useState(false);
@@ -94,16 +116,47 @@ const ResultRecord = props => {
     setOpenDetail(false);
   }, []);
   const onClickDelete = useCallback(() => {
+    if (isRatingLocked) {
+      return;
+    }
     setOpenConfirm(true);
     setIsEdit(false);
-  }, []);
+  }, [isRatingLocked]);
   const onClickEdit = useCallback(() => {
+    if (isRatingLocked) {
+      return;
+    }
     setOpenConfirm(true);
     setIsEdit(true);
-  }, []);
+  }, [isRatingLocked]);
   const onCloseConfirm = useCallback(() => {
     setOpenConfirm(false);
   }, []);
+  const confirmDialogTitle = useMemo(
+    () => (isEdit ? "記録を編集します" : "記録を削除します"),
+    [isEdit]
+  );
+  const confirmDialogBody = useMemo(() => {
+    if (isEdit) {
+      return (
+        <>
+          記録の編集画面に切り替えます。
+          <br />
+          このまま進めてもよろしいですか？
+        </>
+      );
+    }
+    return (
+      <>
+        記録を削除するとレーティング再計算を行います。
+        <br />
+        処理には数分かかる場合があります。
+        <br />
+        このまま進めてもよろしいですか？
+      </>
+    );
+  }, [isEdit]);
+
   const onClickOkConfirm = useCallback(() => {
     setOpenConfirm(false);
     if (isEdit) {
@@ -117,7 +170,7 @@ const ResultRecord = props => {
         })
       );
     } else {
-      d(store.deleteResult(resultId));
+      d(store.deleteResult(resultId, { skipConfirm: true }));
     }
     props.onClose(true);
   }, [d, isEdit, resultId, props.onClose]);
@@ -206,7 +259,7 @@ const ResultRecord = props => {
               color="primary"
               onClick={onClickEdit}
               fullWidth
-              disabled={!isParticipant && !isAdmin}
+              disabled={(!isParticipant && !isAdmin) || isRatingLocked}
               variant="contained"
             >
               記録を編集する
@@ -218,21 +271,38 @@ const ResultRecord = props => {
               color="secondary"
               onClick={onClickDelete}
               fullWidth
-              disabled={!isAdmin}
+              disabled={!isAdmin || isRatingLocked}
               variant="contained"
             >
               記録を削除する
               <DeleteIcon className={classes.rightIcon} />
             </Button>
           </ListItem>
+          {isRatingLocked ? (
+            <ListItem>
+              <Typography
+                variant="body2"
+                color="error"
+                align="center"
+                style={{ width: "100%" }}
+              >
+                {ratingLockMessageLines.map((line, index) => (
+                  <React.Fragment key={index}>
+                    {line}
+                    {index < ratingLockMessageLines.length - 1 ? <br /> : null}
+                  </React.Fragment>
+                ))}
+              </Typography>
+            </ListItem>
+          ) : null}
         </List>
         <AlertDialog
-          title={isEdit ? "記録を編集します" : "記録を削除します"}
+          title={confirmDialogTitle}
           isOpen={openConfirm}
           onClose={onCloseConfirm}
           onClickOk={onClickOkConfirm}
         >
-          本当によろしいですか？
+          {confirmDialogBody}
         </AlertDialog>
       </Dialog>
       <PlayerStatistics

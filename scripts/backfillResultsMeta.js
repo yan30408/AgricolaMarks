@@ -62,8 +62,9 @@ async function main() {
   const updates = [];
   let updatedCount = 0;
   let skippedCount = 0;
+  let failedCount = 0;
   const UPDATE_BATCH_SIZE = 50;
-  const LOG_INTERVAL = 500;
+  const LOG_INTERVAL = 50;
 
   for (const doc of snapshot.docs) {
     const data = doc.data() || {};
@@ -83,7 +84,7 @@ async function main() {
     const shouldUpdatePlayedAt =
       !data.playedAt ||
       data.playedAt.seconds !== playedAt.seconds ||
-        data.playedAt.nanoseconds !== playedAt.nanoseconds;
+      data.playedAt.nanoseconds !== playedAt.nanoseconds;
     const shouldUpdateParticipantCount =
       (data.participantCount || 0) !== participantCount;
 
@@ -111,16 +112,28 @@ async function main() {
 
   for (let index = 0; index < updates.length; index += UPDATE_BATCH_SIZE) {
     const batch = updates.slice(index, index + UPDATE_BATCH_SIZE);
-    await Promise.all(batch.map(({ ref, payload }) => ref.update(payload)));
-    updatedCount += batch.length;
+    for (const { ref, payload } of batch) {
+      try {
+        await ref.update(payload);
+        updatedCount += 1;
+      } catch (error) {
+        failedCount += 1;
+        console.error(`Update failed for ${ref.path}:`, error);
+      }
 
-    if (updatedCount % LOG_INTERVAL === 0 || updatedCount === updates.length) {
-      console.log(`Updated ${updatedCount}/${updates.length} documents...`);
+      if (
+        updatedCount % LOG_INTERVAL === 0 ||
+        updatedCount + failedCount === updates.length
+      ) {
+        console.log(
+          `Updated ${updatedCount}/${updates.length} documents... (failed: ${failedCount})`
+        );
+      }
     }
   }
 
   console.log(
-    `Backfill finished. Updated: ${updatedCount}, Skipped: ${skippedCount}`
+    `Backfill finished. Updated: ${updatedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`
   );
 }
 

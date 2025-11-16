@@ -1,9 +1,57 @@
 import actions from "./actions";
-import { auth, providers } from "initializer";
+import { auth, providers, db } from "initializer";
 import { saveUser } from "../entities.users/operations";
 import { DEFAULT_GAME_MODE } from "Constants";
 
 export const appStateMutate = actions.appStateMutate;
+
+const DEFAULT_RATING_LOCK_MESSAGE =
+  "現在レーティング再計算を実行中です。完了までお待ちください。";
+
+export const subscribeRatingLock = () => dispatch => {
+  let unsubscribe = null;
+  try {
+    const docRef = db.collection("meta").doc("ratingLock");
+    unsubscribe = docRef.onSnapshot(
+      snapshot => {
+        const data = snapshot.data() || {};
+        const locked = Boolean(data.locked);
+        const message =
+          typeof data.message === "string" && data.message.trim().length > 0
+            ? data.message
+            : DEFAULT_RATING_LOCK_MESSAGE;
+        dispatch(
+          appStateMutate(draft => {
+            draft.isRatingRebuildLocked = locked;
+            draft.ratingRebuildMessage = locked ? message : "";
+          })
+        );
+      },
+      error => {
+        console.error("Failed to subscribe rating lock", error);
+        dispatch(
+          appStateMutate(draft => {
+            draft.isRatingRebuildLocked = false;
+            draft.ratingRebuildMessage = "";
+          })
+        );
+      }
+    );
+  } catch (error) {
+    console.error("Failed to initialize rating lock subscription", error);
+    dispatch(
+      appStateMutate(draft => {
+        draft.isRatingRebuildLocked = false;
+        draft.ratingRebuildMessage = "";
+      })
+    );
+  }
+  return () => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe();
+    }
+  };
+};
 
 export const subscribeUserState = () => dispatch => {
   let unsubscribeTokenListener = null;

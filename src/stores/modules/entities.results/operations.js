@@ -9,7 +9,35 @@ import { db, FieldPath, Timestamp, FieldValue } from "initializer";
 import { DEFAULT_GAME_MODE } from "Constants";
 
 const resultsRef = db.collection("results");
+const rebuildLockRef = db.collection("meta").doc("ratingLock");
 
+async function ensureRebuildUnlocked() {
+  try {
+    const snapshot = await rebuildLockRef.get();
+    if (snapshot.exists && snapshot.data()?.locked) {
+      return false;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+  return true;
+}
+
+function confirmRebuild(actionLabel) {
+  if (typeof window === "undefined") {
+    return true;
+  }
+  const label = actionLabel
+    ? `${actionLabel}を実行すると`
+    : "この操作を実行すると";
+  return window.confirm(
+    `${label}レーティング再計算が開始されます。処理には数分かかる場合があります。続行しますか？`
+  );
+}
+
+const handleOperationError = error => {
+  console.error(error);
+};
 const toTimestamp = value => {
   if (!value) return null;
   if (typeof value.toDate === "function") {
@@ -154,21 +182,64 @@ const prepareWritePayload = data => {
 };
 
 export const addResult = data => async dispatch => {
-  if (!data) return null;
+  if (!data) return false;
+  if (!(await ensureRebuildUnlocked())) {
+    return false;
+  }
   const payload = prepareWritePayload(data);
-  await resultsRef.add(payload);
-  dispatch(fetchResultsPage({ reset: true }));
+  try {
+    await resultsRef.add(payload);
+    dispatch(fetchResultsPage({ reset: true }));
+    return true;
+  } catch (error) {
+    handleOperationError(error);
+    return false;
+  }
 };
 
-export const updateResult = (id, data) => async dispatch => {
-  if (!data) return null;
+export const updateResult = (
+  id,
+  data,
+  { skipConfirm = false } = {}
+) => async dispatch => {
+  if (!data) return false;
+  if (!(await ensureRebuildUnlocked())) {
+    return false;
+  }
+  if (!skipConfirm && !confirmRebuild("編集内容の保存")) {
+    return false;
+  }
   const payload = prepareWritePayload(data);
   delete payload.createdAt;
-  await resultsRef.doc(id).update(payload);
-  dispatch(fetchResultsPage({ reset: true }));
+  try {
+    await resultsRef.doc(id).update(payload);
+    dispatch(fetchResultsPage({ reset: true }));
+    return true;
+  } catch (error) {
+    handleOperationError(error);
+    return false;
+  }
 };
 
-export const deleteResult = id => async dispatch => {
-  await resultsRef.doc(id).delete();
-  dispatch(fetchResultsPage({ reset: true }));
+export const deleteResult = (
+  id,
+  { skipConfirm = false } = {}
+) => async dispatch => {
+  if (!id) {
+    return false;
+  }
+  if (!(await ensureRebuildUnlocked())) {
+    return false;
+  }
+  if (!skipConfirm && !confirmRebuild("結果の削除")) {
+    return false;
+  }
+  try {
+    await resultsRef.doc(id).delete();
+    dispatch(fetchResultsPage({ reset: true }));
+    return true;
+  } catch (error) {
+    handleOperationError(error);
+    return false;
+  }
 };

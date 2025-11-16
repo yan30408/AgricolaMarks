@@ -96,9 +96,31 @@ function resolveEmulatorOrigin() {
 
   const host = process.env.FUNCTIONS_EMULATOR_HOST || "localhost";
   const port = process.env.FUNCTIONS_EMULATOR_PORT || "5001";
-  const hasProtocol = host.startsWith("http://") || host.startsWith("https://");
-  const origin = hasProtocol ? host : `http://${host}`;
-  return `${origin.replace(/\/$/, "")}:${port}`;
+  const hasProtocol = /^https?:\/\//i.test(host);
+
+  if (hasProtocol) {
+    try {
+      const url = new URL(host);
+      if (!url.port && port) {
+        url.port = port;
+      }
+      return url.origin;
+    } catch (error) {
+      return host.replace(/\/$/, "");
+    }
+  }
+
+  const normalizedHost = host.replace(/\/$/, "");
+  try {
+    const url = new URL(`http://${normalizedHost}`);
+    if (!url.port && port) {
+      url.port = port;
+    }
+    return url.origin;
+  } catch (error) {
+    const suffix = port ? `:${port}` : "";
+    return `http://${normalizedHost}${suffix}`;
+  }
 }
 
 function detectEmulatorUsage() {

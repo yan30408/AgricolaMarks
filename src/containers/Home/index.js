@@ -95,6 +95,9 @@ const Home = props => {
     return d(store.subscribeUserState());
   }, [d]);
   useEffect(() => {
+    return d(store.subscribeRatingLock());
+  }, [d]);
+  useEffect(() => {
     d(store.fetchResultsPage({ reset: true }));
   }, [d]);
 

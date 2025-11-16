@@ -1,6 +1,16 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
+const {
+  createInitialState,
+  conservativeRating,
+  rateMatch,
+  RATING_STATE_VERSION
+} = require("./lib/trueskill");
+const { rebuildAllRatings } = require("./lib/rebuildAll");
+const {
+  synchronizeSummariesWithRatingStates
+} = require("./lib/synchronizeSummaries");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -8,6 +18,7 @@ if (!admin.apps.length) {
 
 const REGION = "asia-northeast1";
 const db = admin.firestore();
+const rebuildLockRef = db.collection("meta").doc("ratingLock");
 
 const MODE_KEYS = ["classic", "classicMoor", "revised", "revisedMoor"];
 const DEFAULT_GAME_MODE = "classic";
@@ -31,6 +42,8 @@ const GAME_MODE_ALIASES = {
   "revised+moor": "revisedMoor"
 };
 
+const RESULT_RATING_VERSION = 1;
+
 function normalizeGameMode(value) {
   if (!value) {
     return DEFAULT_GAME_MODE;
@@ -44,19 +57,6 @@ function normalizeGameMode(value) {
   }
   const key = raw.toLowerCase();
   return GAME_MODE_ALIASES[key] || DEFAULT_GAME_MODE;
-}
-
-function createEmptyModeSummary() {
-  return {
-    playCount: 0,
-    scoreTotal: 0,
-    highestScore: null,
-    lowestScore: null,
-    rating: null,
-    lastRatingPlayedAt: null,
-    lastRatingResultId: null,
-    updatedAt: null
-  };
 }
 
 function determineFavoriteColor(colorCounts = {}) {
@@ -95,6 +95,64 @@ function toMillis(date) {
   return Number(date) || 0;
 }
 
+function clearRatingsFromPlayers(players) {
+  if (!Array.isArray(players)) {
+    return [];
+  }
+  return players.map(player => {
+    if (!player || typeof player !== "object") {
+      return player;
+    }
+    const {
+      ratingBefore,
+      ratingAfter,
+      ratingVersion,
+      ratingDelta,
+      ratingChange,
+      ...rest
+    } = player;
+    return { ...rest };
+  });
+}
+
+function stripRatingFieldsFromPlayers(players) {
+  return clearRatingsFromPlayers(players);
+}
+
+function computeRatingSignature(result) {
+  if (!result) {
+    return "none";
+  }
+  const mode = normalizeGameMode(result.gameMode);
+  const players = Array.isArray(result.results) ? result.results : [];
+  const tokens = players
+    .filter(player => player && player.uid)
+    .map(player => {
+      const uid = String(player.uid);
+      const rank = Number.isFinite(player.rank) ? Number(player.rank) : "";
+      return `${uid}:${rank}`;
+    })
+    .sort();
+  return `${mode}|${tokens.length}|${tokens.join(",")}`;
+}
+
+function isInternalRatingUpdate(before, after) {
+  if (!before || !after) {
+    return false;
+  }
+  const beforeMode = normalizeGameMode(before.gameMode);
+  const afterMode = normalizeGameMode(after.gameMode);
+  if (beforeMode !== afterMode) {
+    return false;
+  }
+  const beforePlayers = stripRatingFieldsFromPlayers(before.results);
+  const afterPlayers = stripRatingFieldsFromPlayers(after.results);
+  if (JSON.stringify(beforePlayers) !== JSON.stringify(afterPlayers)) {
+    return false;
+  }
+  return true;
+}
+
 // TODO: Add emulator-based tests covering add/update/delete paths before deployment.
 
 exports.onResultWrite = functions
@@ -109,23 +167,61 @@ exports.onResultWrite = functions
       return null;
     }
 
-    const beforeEntries = before ? buildEntries(resultId, before) : [];
-    const afterEntries = after ? buildEntries(resultId, after) : [];
-
-    if (beforeEntries.length) {
-      await applyUserChanges(beforeEntries, "remove");
-    }
-    if (afterEntries.length) {
-      await applyUserChanges(afterEntries, "add");
+    if (before && after && isInternalRatingUpdate(before, after)) {
+      return null;
     }
 
     const isCreate = !before && !!after;
     const isDelete = !!before && !after;
+    const isUpdate = !!before && !!after;
 
-    if (beforeEntries.length || isDelete) {
-      await applyGlobalChange(beforeEntries, "remove", isDelete);
+    const beforeEntries = before ? buildEntries(resultId, before) : [];
+    const afterEntries = after ? buildEntries(resultId, after) : [];
+
+    const beforeSignature = before ? computeRatingSignature(before) : null;
+    const afterSignature = after ? computeRatingSignature(after) : null;
+    const needsRebuild =
+      isDelete || (isUpdate && beforeSignature !== afterSignature);
+    const skipRebuild = after?.ratingRebuildPending === true;
+
+    if (skipRebuild) {
+      functions.logger.info("Deferred rating rebuild due to merge operation", {
+        resultId
+      });
+    } else if (needsRebuild) {
+      const reason = isDelete ? "delete" : "update";
+      const acquired = await runFullRebuild(resultId, reason);
+      if (!acquired) {
+        functions.logger.warn(
+          "Skipped rating rebuild because another rebuild is already running",
+          {
+            resultId,
+            reason
+          }
+        );
+      }
+      return null;
     }
-    if (afterEntries.length || isCreate) {
+
+    if (isCreate && after) {
+      if (await isRebuildLocked()) {
+        functions.logger.warn(
+          "Rating rebuild in progress. Skipping incremental rating update for new result.",
+          { resultId }
+        );
+        return null;
+      }
+
+      const signature = afterSignature || computeRatingSignature(after);
+      await applyRatingsForResult(change.after.ref, after, signature);
+    }
+
+    if (beforeEntries.length) {
+      await applyUserChanges(beforeEntries, "remove");
+      await applyGlobalChange(beforeEntries, "remove", false);
+    }
+    if (afterEntries.length) {
+      await applyUserChanges(afterEntries, "add");
       await applyGlobalChange(afterEntries, "add", isCreate);
     }
 
@@ -223,10 +319,12 @@ exports.mergeUserAccounts = functions
       .filter(id => id !== "summary");
 
     let mergedCount = 0;
+    const updatedResultIds = [];
     for (const resultId of resultIds) {
       const status = await mergeResultDocument(resultId, sourceUid, targetUid);
       if (status === true) {
         mergedCount += 1;
+        updatedResultIds.push(resultId);
       }
     }
 
@@ -247,6 +345,42 @@ exports.mergeUserAccounts = functions
     };
 
     await targetRef.set(targetUpdate, { merge: true });
+
+    if (updatedResultIds.length > 0) {
+      const rebuildReason = `merge:${sourceUid}->${targetUid}`;
+      try {
+        const acquired = await runFullRebuild(
+          updatedResultIds[0],
+          rebuildReason
+        );
+        if (!acquired) {
+          functions.logger.warn(
+            "Deferred post-merge rating rebuild because another rebuild is running",
+            { sourceUid, targetUid }
+          );
+        }
+      } finally {
+        await Promise.all(
+          updatedResultIds.map(resultId =>
+            db
+              .collection("results")
+              .doc(resultId)
+              .update({
+                ratingRebuildPending: FieldValue.delete()
+              })
+              .catch(error => {
+                functions.logger.warn(
+                  "Failed to clear ratingRebuildPending flag",
+                  {
+                    resultId,
+                    error: error?.message || String(error)
+                  }
+                );
+              })
+          )
+        );
+      }
+    }
 
     functions.logger.info("mergeUserAccounts completed", {
       sourceUid,
@@ -280,12 +414,9 @@ function buildEntries(resultId, snapshot) {
       order: Number.isInteger(player.order) ? player.order : null,
       score: player.score?.total || 0,
       color: player.color || null,
-      date: matchDate,
       playedAt: matchDate,
       participantCount,
-      gameMode,
-      ratingBefore: toFiniteNumber(player.ratingBefore),
-      ratingAfter: toFiniteNumber(player.ratingAfter)
+      gameMode
     }));
 }
 
@@ -350,7 +481,8 @@ async function mergeResultDocument(resultId, sourceUid, targetUid) {
 
     tx.update(resultRef, {
       results: updatedPlayers,
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
+      ratingRebuildPending: true
     });
     return true;
   });
@@ -429,10 +561,10 @@ async function applyUserChanges(entries, operation) {
                 ? entry.participantCount
                 : userEntries.length,
             rank: entry.rank,
-            color: entry.color || null,
             totalScore: entry.score,
-            ratingBefore: entry.ratingBefore,
-            ratingAfter: entry.ratingAfter,
+            color: entry.color || null,
+            ratingBefore: FieldValue.delete(),
+            ratingAfter: FieldValue.delete(),
             updatedAt: FieldValue.serverTimestamp()
           },
           { merge: true }
@@ -452,311 +584,348 @@ async function applyUserChanges(entries, operation) {
     if (writesInBatch > 0) {
       await batch.commit();
     }
+  }
 
-    await updateUserModeSummaryForUser(uid, userEntries, operation);
+  for (const [uid, userEntries] of entriesByUser.entries()) {
+    if (operation === "add") {
+      await incrementUserSummary(uid, userEntries);
+    } else {
+      await rebuildUserSummary(uid);
+    }
   }
 }
 
-async function updateUserModeSummaryForUser(uid, entries, operation) {
+async function incrementUserSummary(uid, entries) {
   if (!uid || !entries.length) {
     return;
   }
 
-  const summaryRef = db.doc(`users/${uid}/statsSummary/modes`);
-  const snapshot = await summaryRef.get();
-  const existing = snapshot.exists ? snapshot.data() : {};
-  const currentModes =
-    existing && typeof existing === "object" && existing.modes
-      ? { ...existing.modes }
-      : {};
-  let colorCounts =
-    existing && typeof existing.colorCounts === "object"
-      ? sanitizeColorCounts(existing.colorCounts)
-      : {};
-  let favoriteColor =
-    typeof existing.favoriteColor === "string" ? existing.favoriteColor : null;
+  const userRef = db.collection("users").doc(uid);
+  const summaryRef = userRef.collection("statsSummary").doc("modes");
 
-  const perMode = new Map();
+  const entriesByMode = new Map();
   entries.forEach(entry => {
     const mode = normalizeGameMode(entry.gameMode);
-    if (!perMode.has(mode)) {
-      perMode.set(mode, []);
+    if (!entriesByMode.has(mode)) {
+      entriesByMode.set(mode, []);
     }
-    perMode.get(mode).push(entry);
-
-    if (entry.color) {
-      if (operation === "add") {
-        colorCounts[entry.color] = (colorCounts[entry.color] || 0) + 1;
-      } else if (operation === "remove") {
-        if (colorCounts[entry.color]) {
-          colorCounts[entry.color] -= 1;
-          if (colorCounts[entry.color] <= 0) {
-            delete colorCounts[entry.color];
-          }
-        }
-      }
-    }
+    entriesByMode.get(mode).push(entry);
   });
 
-  for (const [mode, modeEntries] of perMode.entries()) {
-    let summary = cloneModeSummary(currentModes[mode]);
+  const ratingStates = new Map();
+  await Promise.all(
+    Array.from(entriesByMode.keys()).map(async mode => {
+      const stateSnapshot = await db
+        .collection("users")
+        .doc(uid)
+        .collection("ratingStates")
+        .doc(mode)
+        .get();
+      if (stateSnapshot.exists) {
+        ratingStates.set(mode, stateSnapshot.data() || {});
+      }
+    })
+  );
 
-    if (operation === "add") {
-      summary = applyModeAdditions(summary, modeEntries);
-    } else if (operation === "remove") {
-      summary = await applyModeRemovals(uid, mode, summary, modeEntries);
-    }
+  await db.runTransaction(async tx => {
+    const snapshot = await tx.get(summaryRef);
+    const existing = snapshot.exists ? snapshot.data() || {} : {};
+    const modes =
+      existing.modes && typeof existing.modes === "object"
+        ? { ...existing.modes }
+        : {};
+    const colorCounts = sanitizeColorCounts(existing.colorCounts);
 
-    if (!summary || summary.playCount <= 0) {
-      delete currentModes[mode];
-      continue;
-    }
+    entries.forEach(entry => {
+      const color = entry.color || null;
+      if (color) {
+        colorCounts[color] = (colorCounts[color] || 0) + 1;
+      }
+    });
 
-    const sanitized = sanitizeModeSummary(summary);
-    sanitized.updatedAt = FieldValue.serverTimestamp();
-    currentModes[mode] = sanitized;
-  }
+    entriesByMode.forEach((modeEntries, mode) => {
+      const scores = modeEntries.map(entry => Number(entry.score) || 0);
+      const scoreSum = scores.reduce((total, value) => total + value, 0);
+      const summary =
+        modes[mode] && typeof modes[mode] === "object"
+          ? { ...modes[mode] }
+          : {
+              playCount: 0,
+              scoreTotal: 0,
+              highestScore: null,
+              lowestScore: null,
+              rating: null,
+              sigma: null,
+              lastPlayedAt: null,
+              lastResultId: null,
+              updatedAt: null
+            };
 
-  colorCounts = sanitizeColorCounts(colorCounts);
-  favoriteColor = determineFavoriteColor(colorCounts) || null;
+      summary.playCount = Math.max(
+        0,
+        Math.round(Number(summary.playCount) || 0)
+      );
+      summary.playCount += modeEntries.length;
+      summary.scoreTotal = Number(summary.scoreTotal) || 0;
+      summary.scoreTotal += scoreSum;
 
-  if (Object.keys(currentModes).length === 0) {
-    if (snapshot.exists && Object.keys(colorCounts).length === 0) {
-      await summaryRef.delete();
-    }
+      modeEntries.forEach(entry => {
+        const playedAt = entry.playedAt || entry.date || null;
+        const candidate = {
+          resultId: entry.resultId,
+          score: Number(entry.score) || 0,
+          playedAt
+        };
+
+        const isHigher =
+          !summary.highestScore ||
+          candidate.score > Number(summary.highestScore.score) ||
+          (candidate.score === Number(summary.highestScore.score) &&
+            toMillis(playedAt) >
+              toMillis(summary.highestScore?.playedAt || null));
+        if (isHigher) {
+          summary.highestScore = candidate;
+        }
+
+        const isLower =
+          !summary.lowestScore ||
+          candidate.score < Number(summary.lowestScore.score) ||
+          (candidate.score === Number(summary.lowestScore.score) &&
+            toMillis(playedAt) <
+              toMillis(summary.lowestScore?.playedAt || null));
+        if (isLower) {
+          summary.lowestScore = candidate;
+        }
+
+        if (
+          !summary.lastPlayedAt ||
+          toMillis(playedAt) >= toMillis(summary.lastPlayedAt)
+        ) {
+          summary.lastPlayedAt = playedAt;
+          summary.lastResultId = entry.resultId;
+        }
+      });
+
+      const ratingState = ratingStates.get(mode);
+      if (
+        ratingState &&
+        Number.isFinite(ratingState.mu) &&
+        Number.isFinite(ratingState.sigma)
+      ) {
+        summary.rating = conservativeRating(ratingState.mu, ratingState.sigma);
+        summary.sigma = ratingState.sigma;
+      }
+
+      summary.updatedAt = FieldValue.serverTimestamp();
+      modes[mode] = summary;
+    });
+
+    const favoriteColor = determineFavoriteColor(colorCounts) || null;
+
+    tx.set(
+      summaryRef,
+      {
+        modes,
+        colorCounts: sanitizeColorCounts(colorCounts),
+        favoriteColor,
+        type: "summary",
+        updatedAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+  });
+}
+
+async function rebuildUserSummary(uid) {
+  if (!uid) {
     return;
   }
 
-  await summaryRef.set(
-    {
-      modes: currentModes,
-      colorCounts,
-      favoriteColor,
-      type: "summary",
-      updatedAt: FieldValue.serverTimestamp()
-    },
-    { merge: true }
-  );
-}
-
-function cloneModeSummary(source) {
-  const base = createEmptyModeSummary();
-  if (!source || typeof source !== "object") {
-    return base;
-  }
-
-  base.playCount = Number.isFinite(source.playCount) ? source.playCount : 0;
-  base.scoreTotal = Number.isFinite(source.scoreTotal) ? source.scoreTotal : 0;
-  base.highestScore = cloneScoreReference(source.highestScore);
-  base.lowestScore = cloneScoreReference(source.lowestScore);
-  base.rating =
-    typeof source.rating === "number" && Number.isFinite(source.rating)
-      ? source.rating
-      : null;
-  base.lastRatingPlayedAt = source.lastRatingPlayedAt || null;
-  base.lastRatingResultId = source.lastRatingResultId || null;
-  base.updatedAt = source.updatedAt || null;
-  return base;
-}
-
-function cloneScoreReference(ref) {
-  if (!ref || typeof ref !== "object") {
-    return null;
-  }
-  return {
-    resultId: ref.resultId || null,
-    score: Number.isFinite(ref.score) ? ref.score : 0,
-    playedAt: ref.playedAt || null
-  };
-}
-
-function applyModeAdditions(summary, entries) {
-  const updated = cloneModeSummary(summary);
-
-  entries.forEach(entry => {
-    const score = Number.isFinite(entry.score) ? entry.score : 0;
-    const playedAt = entry.playedAt || entry.date || null;
-
-    updated.playCount += 1;
-    updated.scoreTotal += score;
-
-    if (
-      !updated.highestScore ||
-      score > updated.highestScore.score ||
-      (score === updated.highestScore.score &&
-        toMillis(playedAt) > toMillis(updated.highestScore.playedAt))
-    ) {
-      updated.highestScore = {
-        resultId: entry.resultId,
-        score,
-        playedAt
-      };
-    }
-
-    if (
-      !updated.lowestScore ||
-      score < updated.lowestScore.score ||
-      (score === updated.lowestScore.score &&
-        toMillis(playedAt) < toMillis(updated.lowestScore.playedAt))
-    ) {
-      updated.lowestScore = {
-        resultId: entry.resultId,
-        score,
-        playedAt
-      };
-    }
-
-    if (
-      entry.ratingAfter !== null &&
-      entry.ratingAfter !== undefined &&
-      Number.isFinite(entry.ratingAfter)
-    ) {
-      const entryMillis = toMillis(playedAt);
-      const storedMillis = toMillis(updated.lastRatingPlayedAt);
-      if (updated.lastRatingPlayedAt === null || entryMillis >= storedMillis) {
-        updated.rating = entry.ratingAfter;
-        updated.lastRatingPlayedAt = playedAt;
-        updated.lastRatingResultId = entry.resultId;
-      }
-    }
-  });
-
-  return updated;
-}
-
-async function applyModeRemovals(uid, mode, summary, entries) {
-  const updated = cloneModeSummary(summary);
-
-  let highestAffected = false;
-  let lowestAffected = false;
-  let ratingAffected = false;
-
-  entries.forEach(entry => {
-    const score = Number.isFinite(entry.score) ? entry.score : 0;
-    updated.playCount -= 1;
-    updated.scoreTotal -= score;
-
-    if (updated.highestScore?.resultId === entry.resultId) {
-      highestAffected = true;
-    }
-    if (updated.lowestScore?.resultId === entry.resultId) {
-      lowestAffected = true;
-    }
-    if (updated.lastRatingResultId === entry.resultId) {
-      ratingAffected = true;
-    }
-  });
-
-  if (updated.playCount <= 0) {
-    return createEmptyModeSummary();
-  }
-
-  if (highestAffected) {
-    updated.highestScore = await fetchExtremeScore(uid, mode, "desc");
-  }
-  if (lowestAffected) {
-    updated.lowestScore = await fetchExtremeScore(uid, mode, "asc");
-  }
-  if (ratingAffected) {
-    const latestRating = await fetchLatestRating(uid, mode);
-    if (latestRating) {
-      updated.rating = latestRating.rating;
-      updated.lastRatingPlayedAt = latestRating.playedAt || null;
-      updated.lastRatingResultId = latestRating.resultId || null;
-    } else {
-      updated.rating = null;
-      updated.lastRatingPlayedAt = null;
-      updated.lastRatingResultId = null;
-    }
-  }
-
-  return updated;
-}
-
-function sanitizeModeSummary(summary) {
-  const sanitized = cloneModeSummary(summary);
-  sanitized.playCount = Math.max(0, Math.round(sanitized.playCount || 0));
-  if (!sanitized.highestScore) {
-    sanitized.highestScore = null;
-  }
-  if (!sanitized.lowestScore) {
-    sanitized.lowestScore = null;
-  }
-  if (sanitized.rating !== null && !Number.isFinite(sanitized.rating)) {
-    sanitized.rating = null;
-  }
-  return sanitized;
-}
-
-async function fetchExtremeScore(uid, mode, direction) {
-  const statsRef = db
-    .collection("users")
-    .doc(uid)
-    .collection("stats");
-  const orderDirection = direction === "asc" ? "asc" : "desc";
-  const snapshot = await statsRef
-    .where("gameMode", "==", mode)
-    .orderBy("totalScore", orderDirection)
-    .limit(1)
-    .get();
+  const userRef = db.collection("users").doc(uid);
+  const statsRef = userRef.collection("stats");
+  const snapshot = await statsRef.get();
 
   if (snapshot.empty) {
-    return null;
+    await userRef
+      .collection("statsSummary")
+      .doc("modes")
+      .delete()
+      .catch(() => {});
+    return;
   }
 
-  const doc = snapshot.docs[0];
-  const data = doc.data() || {};
-  return {
-    resultId: doc.id,
-    score: Number.isFinite(data.totalScore) ? data.totalScore : 0,
-    playedAt: data.playedAt || null
-  };
-}
+  const perMode = new Map();
+  const colorCounts = {};
 
-async function fetchLatestRating(uid, mode) {
-  const statsRef = db
-    .collection("users")
-    .doc(uid)
-    .collection("stats");
-  const snapshot = await statsRef
-    .where("gameMode", "==", mode)
-    .orderBy("playedAt", "desc")
-    .limit(20)
-    .get();
+  const colorFetches = [];
 
-  if (snapshot.empty) {
-    return null;
-  }
-
-  let fallback = null;
   for (const doc of snapshot.docs) {
     const data = doc.data() || {};
-    if (
-      data.ratingAfter !== undefined &&
-      data.ratingAfter !== null &&
-      Number.isFinite(data.ratingAfter)
-    ) {
-      return {
-        rating: data.ratingAfter,
-        playedAt: data.playedAt || null,
-        resultId: doc.id
-      };
+    const mode = normalizeGameMode(data.gameMode);
+    if (!perMode.has(mode)) {
+      perMode.set(mode, {
+        playCount: 0,
+        scoreTotal: 0,
+        highestScore: null,
+        lowestScore: null,
+        rating: null,
+        ratingSigma: null,
+        lastPlayedAt: null,
+        lastResultId: null
+      });
     }
+    const aggregate = perMode.get(mode);
+    const score = Number.isFinite(data.totalScore) ? data.totalScore : 0;
+    const playedAt = data.playedAt || null;
+    const candidate = {
+      resultId: doc.id,
+      score,
+      playedAt
+    };
+
+    aggregate.playCount += 1;
+    aggregate.scoreTotal += score;
+
     if (
-      fallback === null &&
-      data.ratingBefore !== undefined &&
-      data.ratingBefore !== null &&
-      Number.isFinite(data.ratingBefore)
+      !aggregate.highestScore ||
+      score > aggregate.highestScore.score ||
+      (score === aggregate.highestScore.score &&
+        toMillis(playedAt) > toMillis(aggregate.highestScore.playedAt))
     ) {
-      fallback = {
-        rating: data.ratingBefore,
-        playedAt: data.playedAt || null,
-        resultId: doc.id
-      };
+      aggregate.highestScore = candidate;
+    }
+
+    if (
+      !aggregate.lowestScore ||
+      score < aggregate.lowestScore.score ||
+      (score === aggregate.lowestScore.score &&
+        toMillis(playedAt) < toMillis(aggregate.lowestScore.playedAt))
+    ) {
+      aggregate.lowestScore = candidate;
+    }
+
+    if (
+      !aggregate.lastPlayedAt ||
+      toMillis(playedAt) >= toMillis(aggregate.lastPlayedAt)
+    ) {
+      aggregate.lastPlayedAt = playedAt;
+      aggregate.lastResultId = doc.id;
+    }
+
+    const color = data.color || null;
+    if (color) {
+      colorCounts[color] = (colorCounts[color] || 0) + 1;
+    } else {
+      colorFetches.push(
+        db
+          .collection("results")
+          .doc(doc.id)
+          .get()
+          .then(resultSnapshot => {
+            if (!resultSnapshot.exists) {
+              return;
+            }
+            const resultData = resultSnapshot.data() || {};
+            const players = Array.isArray(resultData.results)
+              ? resultData.results
+              : [];
+            const playerEntry = players.find(
+              player => player && player.uid === uid
+            );
+            const entryColor = playerEntry?.color || null;
+            if (entryColor) {
+              colorCounts[entryColor] = (colorCounts[entryColor] || 0) + 1;
+            }
+          })
+          .catch(error => {
+            functions.logger?.warn?.("Failed to load result color", {
+              uid,
+              resultId: doc.id,
+              error: error?.message || String(error)
+            });
+          })
+      );
     }
   }
 
-  return fallback;
+  if (colorFetches.length) {
+    await Promise.all(colorFetches);
+  }
+
+  const modeKeys = Array.from(perMode.keys());
+  if (!modeKeys.length) {
+    await userRef
+      .collection("statsSummary")
+      .doc("modes")
+      .delete()
+      .catch(() => {});
+    return;
+  }
+
+  const ratingStatesCollection = userRef.collection("ratingStates");
+  const userStates = new Map();
+  await Promise.all(
+    modeKeys.map(async mode => {
+      const stateSnapshot = await ratingStatesCollection.doc(mode).get();
+      if (!stateSnapshot.exists) {
+        return;
+      }
+      const state = stateSnapshot.data() || {};
+      if (
+        Number.isFinite(state.mu) &&
+        Number.isFinite(state.sigma) &&
+        state.version === RATING_STATE_VERSION
+      ) {
+        userStates.set(mode, state);
+        const aggregate = perMode.get(mode);
+        aggregate.rating = conservativeRating(state.mu, state.sigma);
+        aggregate.ratingSigma = state.sigma;
+      }
+    })
+  );
+
+  const sanitizedColorCounts = sanitizeColorCounts(colorCounts);
+  const favoriteColor = determineFavoriteColor(sanitizedColorCounts) || null;
+
+  const modesPayload = {};
+  modeKeys.forEach(mode => {
+    const aggregate = perMode.get(mode);
+    const state = userStates.get(mode);
+    const rating =
+      state && Number.isFinite(state.mu) && Number.isFinite(state.sigma)
+        ? conservativeRating(state.mu, state.sigma)
+        : typeof aggregate.rating === "number" &&
+          Number.isFinite(aggregate.rating)
+        ? aggregate.rating
+        : null;
+    const sigma = state && Number.isFinite(state.sigma) ? state.sigma : null;
+
+    modesPayload[mode] = {
+      playCount: Math.max(0, Math.round(aggregate.playCount || 0)),
+      scoreTotal: Number(aggregate.scoreTotal) || 0,
+      highestScore: aggregate.highestScore || null,
+      lowestScore: aggregate.lowestScore || null,
+      rating,
+      sigma,
+      lastPlayedAt: aggregate.lastPlayedAt || null,
+      lastResultId: aggregate.lastResultId || null,
+      updatedAt: FieldValue.serverTimestamp()
+    };
+  });
+
+  await userRef
+    .collection("statsSummary")
+    .doc("modes")
+    .set(
+      {
+        modes: modesPayload,
+        colorCounts: sanitizedColorCounts,
+        favoriteColor,
+        type: "summary",
+        updatedAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
 }
 
 function normalizeRank(rank) {
@@ -861,6 +1030,197 @@ async function applyGlobalChange(entries, operation, adjustMatchCount) {
       updatedAt: FieldValue.serverTimestamp()
     });
   });
+}
+
+async function isRebuildLocked() {
+  const snapshot = await rebuildLockRef.get();
+  return snapshot.exists && snapshot.data()?.locked;
+}
+
+async function acquireRebuildLock(reason, resultId) {
+  try {
+    await db.runTransaction(async tx => {
+      const snapshot = await tx.get(rebuildLockRef);
+      if (snapshot.exists && snapshot.data()?.locked) {
+        throw new Error("LOCKED");
+      }
+      tx.set(rebuildLockRef, {
+        locked: true,
+        reason: reason || null,
+        resultId: resultId || null,
+        startedAt: FieldValue.serverTimestamp()
+      });
+    });
+    return true;
+  } catch (error) {
+    if (error.message === "LOCKED") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function releaseRebuildLock(status) {
+  await rebuildLockRef.set(
+    {
+      locked: false,
+      status: status || "idle",
+      finishedAt: FieldValue.serverTimestamp(),
+      reason: null,
+      resultId: null
+    },
+    { merge: true }
+  );
+}
+
+async function runFullRebuild(resultId, reason) {
+  const acquired = await acquireRebuildLock(reason, resultId);
+  if (!acquired) {
+    return false;
+  }
+  try {
+    await rebuildAllRatings({
+      db,
+      FieldValue,
+      logger: functions.logger
+    });
+    await synchronizeSummariesWithRatingStates({
+      db,
+      FieldValue,
+      logger: functions.logger
+    });
+    await releaseRebuildLock("success");
+    return true;
+  } catch (error) {
+    await releaseRebuildLock("error");
+    functions.logger.error("Rating rebuild failed", {
+      resultId,
+      reason,
+      message: error?.message || String(error)
+    });
+    throw error;
+  }
+}
+
+function normalizeRatingState(data) {
+  if (!data || typeof data !== "object") {
+    return createInitialState();
+  }
+  const mu = Number(data.mu);
+  const sigma = Number(data.sigma);
+  if (!Number.isFinite(mu) || !Number.isFinite(sigma)) {
+    return createInitialState();
+  }
+  return {
+    version:
+      data.version === RATING_STATE_VERSION
+        ? data.version
+        : RATING_STATE_VERSION,
+    mu,
+    sigma,
+    lastResultId: data.lastResultId || null,
+    lastPlayedAt: data.lastPlayedAt || null,
+    historyVersion: Number.isFinite(data.historyVersion)
+      ? data.historyVersion
+      : 1
+  };
+}
+
+async function applyRatingsForResult(resultRef, resultData, signature) {
+  const mode = normalizeGameMode(resultData.gameMode);
+  const entries = buildEntries(resultRef.id, resultData).filter(
+    entry => entry.uid
+  );
+
+  if (!entries.length) {
+    await resultRef.update({
+      results: clearRatingsFromPlayers(resultData.results),
+      ratingMeta: {
+        version: RESULT_RATING_VERSION,
+        signature,
+        status: "applied",
+        updatedAt: FieldValue.serverTimestamp()
+      }
+    });
+    return;
+  }
+
+  const ratingStates = await Promise.all(
+    entries.map(async entry => {
+      const ref = db.doc(`users/${entry.uid}/ratingStates/${mode}`);
+      const snapshot = await ref.get();
+      const state = normalizeRatingState(
+        snapshot.exists ? snapshot.data() : null
+      );
+      return { uid: entry.uid, ref, state };
+    })
+  );
+
+  const stateLookup = new Map();
+  ratingStates.forEach(({ uid, state }) => {
+    stateLookup.set(uid, state);
+  });
+
+  const { outcomes, newStates } = rateMatch(entries, stateLookup);
+  const entryByUid = new Map(entries.map(entry => [entry.uid, entry]));
+
+  const updatedPlayers = (Array.isArray(resultData.results)
+    ? resultData.results
+    : []
+  ).map(player => {
+    if (!player || typeof player !== "object" || !player.uid) {
+      return player;
+    }
+    const outcome = outcomes.get(player.uid);
+    const sanitized = { ...player };
+    delete sanitized.ratingBefore;
+    delete sanitized.ratingAfter;
+    delete sanitized.ratingVersion;
+    if (outcome) {
+      sanitized.ratingBefore = outcome.ratingBefore;
+      sanitized.ratingAfter = outcome.ratingAfter;
+      sanitized.ratingVersion = RESULT_RATING_VERSION;
+    }
+    return sanitized;
+  });
+
+  const batch = db.batch();
+  ratingStates.forEach(({ uid, ref }) => {
+    const newState = newStates.get(uid);
+    if (!newState) {
+      return;
+    }
+    const entry = entryByUid.get(uid);
+    const existingState = stateLookup.get(uid) || createInitialState();
+    batch.set(
+      ref,
+      {
+        version: RATING_STATE_VERSION,
+        mu: newState.mu,
+        sigma: newState.sigma,
+        lastResultId: resultRef.id,
+        lastPlayedAt:
+          entry?.playedAt || resultData.playedAt || resultData.date || null,
+        historyVersion: Number.isFinite(existingState.historyVersion)
+          ? existingState.historyVersion
+          : 1,
+        updatedAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+  });
+
+  batch.update(resultRef, {
+    results: updatedPlayers,
+    ratingMeta: {
+      version: RESULT_RATING_VERSION,
+      signature,
+      status: "applied",
+      updatedAt: FieldValue.serverTimestamp()
+    }
+  });
+
+  await batch.commit();
 }
 
 function createEmptyGlobalStats() {

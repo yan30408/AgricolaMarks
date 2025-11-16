@@ -18,6 +18,14 @@ const path = require("path");
 const process = require("process");
 const admin = require("firebase-admin");
 
+const dotenvLocalPath = path.resolve(".env.local");
+const dotenvDefaultPath = path.resolve(".env");
+if (fs.existsSync(dotenvLocalPath)) {
+  require("dotenv").config({ path: dotenvLocalPath });
+} else if (fs.existsSync(dotenvDefaultPath)) {
+  require("dotenv").config({ path: dotenvDefaultPath });
+}
+
 function showUsage() {
   console.log(`Usage:
   node scripts/setAdminClaim.js --uid=<UID> --grant

@@ -24,7 +24,10 @@ const initialState = {
   isOpenStatistics: false,
 
   resultDate: null,
-  resultId: null
+  resultId: null,
+
+  isRatingRebuildLocked: false,
+  ratingRebuildMessage: ""
 };
 
 // Reducers

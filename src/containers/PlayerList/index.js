@@ -37,6 +37,7 @@ import RatingIcon from "@mui/icons-material/Leaderboard";
 import { GameModes, DEFAULT_GAME_MODE } from "Constants";
 import UserListItem from "./UserListItem";
 import PlayerStatistics from "containers/PlayerStatistics";
+import { getAdjustedRating } from "./ratingUtils";
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -88,9 +89,11 @@ const compareStatistics = (a, b, type, options = {}) => {
     case "playCount":
       return (b?.playCount || 0) - (a?.playCount || 0);
     case "rating":
+      const ratingA = getAdjustedRating(a, now);
+      const ratingB = getAdjustedRating(b, now);
       return (
-        (b?.rating ?? Number.NEGATIVE_INFINITY) -
-        (a?.rating ?? Number.NEGATIVE_INFINITY)
+        (ratingB ?? Number.NEGATIVE_INFINITY) -
+        (ratingA ?? Number.NEGATIVE_INFINITY)
       );
     case "averageScore":
       return getAverageScore(b) - getAverageScore(a);
@@ -311,7 +314,7 @@ const PlayerList = props => {
             icon={<PlaysIcon />}
           />
           <BottomNavigationAction
-            label="レーティング"
+            label="レート"
             value="rating"
             icon={<RatingIcon />}
           />

@@ -103,6 +103,16 @@ const AboutDialog = props => {
           MIT license
         </a>
         <Typography variant="h6" color="inherit" className={classes.flex}>
+          Rating
+        </Typography>
+        <Typography variant="caption" color="inherit" className={classes.flex}>
+          <ul className={classes.historyList}>
+            <li>レーティングには TrueSkill を利用しています</li>
+            <li>TrueSkill は Microsoft の登録商標です</li>
+            <li>最終プレイ日付に応じて係数をかけた値で算出しています</li>
+          </ul>
+        </Typography>
+        <Typography variant="h6" color="inherit" className={classes.flex}>
           History
         </Typography>
         {ChangeLog.map(info => (

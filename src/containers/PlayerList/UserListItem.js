@@ -13,6 +13,7 @@ import {
 import ArrowForwardIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { Colors } from "Constants";
+import { getAdjustedRating, formatAdjustedRating } from "./ratingUtils";
 
 const useStyles = makeStyles({
   spacer: {
@@ -48,8 +49,7 @@ const UserListItem = props => {
   );
   const modeKey = props.mode || DEFAULT_MODE;
   const modeStats = summary?.modes?.[modeKey] || null;
-  const favoriteColor =
-    summary?.favoriteColor ?? modeStats?.favoriteColor ?? null;
+  const favoriteColor = summary?.favoriteColor ?? null;
 
   const value = useMemo(() => {
     if (!modeStats) return "-";
@@ -70,7 +70,7 @@ const UserListItem = props => {
           ? `${modeStats.lowestScore.score} pt`
           : "-";
       case "rating":
-        return modeStats.rating != null ? `${modeStats.rating}` : "-";
+        return formatAdjustedRating(getAdjustedRating(modeStats));
       default:
         return "-";
     }

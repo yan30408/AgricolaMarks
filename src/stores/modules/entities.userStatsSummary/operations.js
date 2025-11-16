@@ -69,12 +69,11 @@ function sanitizeModeSummary(value) {
   summary.scoreTotal = Number.isFinite(summary.scoreTotal)
     ? summary.scoreTotal
     : 0;
-  summary.favoriteColor =
-    typeof summary.favoriteColor === "string" ? summary.favoriteColor : null;
   summary.rating =
     typeof summary.rating === "number" && Number.isFinite(summary.rating)
       ? summary.rating
       : null;
+  summary.sigma = sanitizeSigmaValue(summary);
   summary.highestScore =
     summary.highestScore && typeof summary.highestScore === "object"
       ? {
@@ -91,12 +90,20 @@ function sanitizeModeSummary(value) {
           playedAt: summary.lowestScore.playedAt || null
         }
       : null;
-  summary.lastRatingPlayedAt = summary.lastRatingPlayedAt || null;
-  summary.lastRatingResultId = summary.lastRatingResultId || null;
   summary.updatedAt = summary.updatedAt || null;
-  delete summary.favoriteColor;
-  delete summary.colorCounts;
   return summary;
+}
+
+function sanitizeSigmaValue(summary) {
+  const direct = Number(summary?.sigma);
+  if (Number.isFinite(direct) && direct > 0) {
+    return direct;
+  }
+  const legacy = Number(summary?.ratingSigma);
+  if (Number.isFinite(legacy) && legacy > 0) {
+    return legacy;
+  }
+  return null;
 }
 
 function sanitizeColorCounts(value) {

@@ -47,6 +47,10 @@ import { format } from "date-fns";
 import { Colors, Orders, GameModes, DEFAULT_GAME_MODE } from "Constants";
 import AlertDialog from "components/AlertDialog";
 import ResultRecord from "containers/ResultList/ResultRecord";
+import {
+  getAdjustedRating,
+  formatAdjustedRating
+} from "containers/PlayerList/ratingUtils";
 
 const DEFAULT_MAIN_COLOR = "#607d8b";
 const DEFAULT_SUB_COLOR = "#eceff1";
@@ -155,7 +159,9 @@ const PlayerStatistics = props => {
   const isAnonymous = useSelector(state =>
     store.getAppState(state, "isAnonymous")
   );
-  const canMerge = !isAnonymous && uid && uid !== myUid;
+  // ユーザー主導でマージさせるのはいろいろ問題があるのでいったん封印
+  // const canMerge = !isAnonymous && uid && uid !== myUid;
+  const canMerge = false;
 
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [isOpenResultId, setIsOpenResultId] = useState("");
@@ -261,7 +267,33 @@ const PlayerStatistics = props => {
     playCount > 0 ? (statistics.scoreTotal / playCount).toFixed(1) : null;
   const highestScore = statistics.highestScore;
   const lowestScore = statistics.lowestScore;
-  const rating = statistics.rating;
+  const ratingSource = useMemo(() => {
+    if (
+      modeSummary &&
+      typeof modeSummary.rating === "number" &&
+      Number.isFinite(modeSummary.rating)
+    ) {
+      return {
+        rating: modeSummary.rating,
+        lastPlayedAt: modeSummary.lastPlayedAt || null
+      };
+    }
+    if (
+      statistics &&
+      typeof statistics.rating === "number" &&
+      Number.isFinite(statistics.rating)
+    ) {
+      return {
+        rating: statistics.rating,
+        lastPlayedAt: statistics.lastPlayedAt || null
+      };
+    }
+    return null;
+  }, [modeSummary, statistics]);
+
+  const adjustedRating = formatAdjustedRating(
+    ratingSource ? getAdjustedRating(ratingSource) : null
+  );
 
   const onClickMerge = useCallback(() => {
     setOpenMerge(true);
@@ -289,10 +321,15 @@ const PlayerStatistics = props => {
 
   const onSelect = useCallback(event => {
     const { payload } = event;
-    if (payload) {
-      setIsOpenResult(true);
-      setIsOpenResultId(payload.id);
+    if (!payload) {
+      return;
     }
+    const resultId = payload.id ?? payload.resultId;
+    if (!resultId) {
+      return;
+    }
+    setIsOpenResult(true);
+    setIsOpenResultId(resultId);
   }, []);
 
   const onDeselect = useCallback(
@@ -381,10 +418,10 @@ const PlayerStatistics = props => {
               </Typography>
             </ListItem>
             <ListItem divider>
-              <ListItemText primary="レーティング" />
+              <ListItemText primary="レート" />
               <div className={classes.spacer} />
               <Typography variant="subtitle2" noWrap>
-                {rating != null ? rating : "-"}
+                {adjustedRating || "-"}
               </Typography>
             </ListItem>
             <ListItem>

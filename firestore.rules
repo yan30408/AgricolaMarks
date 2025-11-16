@@ -22,5 +22,9 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    match /meta/{docId} {
+      allow get: if true;
+      allow write: if false;
+    }
   }
 }
