@@ -3,8 +3,8 @@ import React, {
   useCallback,
   useState,
   forwardRef,
-  useMemo,
-  useEffect
+  useEffect,
+  useRef
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import store from "stores/interfaces";
@@ -23,6 +23,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 
 import ResultListListItem from "./ResultListListItem";
 import ResultRecord from "./ResultRecord";
+
+const SCROLL_THRESHOLD = 48;
 
 const Transition = forwardRef((props, ref) => {
   return <Slide direction="left" ref={ref} {...props} />;
@@ -50,6 +52,7 @@ const useStyles = makeStyles(theme => ({
 const ResultList = props => {
   const classes = useStyles();
   const d = useDispatch();
+  const listRef = useRef(null);
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [isOpenResultId, setIsOpenResultId] = useState("");
 
@@ -65,13 +68,25 @@ const ResultList = props => {
     event => {
       const target = event.currentTarget;
       const isNearBottom =
-        target.scrollHeight - target.scrollTop - target.clientHeight < 48;
+        target.scrollHeight - target.scrollTop - target.clientHeight <
+        SCROLL_THRESHOLD;
       if (isNearBottom && !loading && hasMore) {
         d(store.fetchResultsPage());
       }
     },
     [loading, hasMore, d]
   );
+
+  const ensureContentFillsViewport = useCallback(() => {
+    const target = listRef.current;
+    if (!target) {
+      return;
+    }
+    const remaining = target.scrollHeight - target.clientHeight;
+    if (remaining <= SCROLL_THRESHOLD && !loading && hasMore) {
+      d(store.fetchResultsPage());
+    }
+  }, [loading, hasMore, d]);
 
   const onClose = useCallback(() => {
     d(
@@ -94,6 +109,13 @@ const ResultList = props => {
     }
   }, [open, d]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    ensureContentFillsViewport();
+  }, [open, groups, ensureContentFillsViewport]);
+
   const hasData = groups.length > 0;
 
   return (
@@ -114,7 +136,7 @@ const ResultList = props => {
             </Typography>
           </Toolbar>
         </AppBar>
-        <List className={classes.list} onScroll={handleScroll}>
+        <List ref={listRef} className={classes.list} onScroll={handleScroll}>
           {groups.map(group => (
             <React.Fragment key={group.day}>
               <ListSubheader className={classes.subheader}>
