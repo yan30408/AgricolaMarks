@@ -40,7 +40,10 @@ const GAME_MODE_ALIASES = {
 };
 
 async function main() {
+  const metrics = { reads: 0, writes: 0, deletes: 0 };
+
   const snapshot = await db.collection("results").get();
+  metrics.reads += snapshot.size;
   console.log(`Processing ${snapshot.size} results...`);
 
   let batch = db.batch();
@@ -69,6 +72,7 @@ async function main() {
         },
         { merge: true }
       );
+      metrics.writes += 1;
 
       opsInBatch += 1;
       if (!entriesByUser.has(entry.uid)) {
@@ -100,7 +104,13 @@ async function main() {
       Object.keys(modes).length === 0 &&
       Object.keys(colorCounts).length === 0
     ) {
-      await summaryRef.delete().catch(() => {});
+      try {
+        await summaryRef.delete();
+        metrics.writes += 1;
+        metrics.deletes += 1;
+      } catch (error) {
+        // ignore cleanup errors to keep previous behavior
+      }
     } else {
       Object.keys(modes).forEach(modeKey => {
         modes[modeKey].updatedAt = FieldValue.serverTimestamp();
@@ -115,9 +125,13 @@ async function main() {
         },
         { merge: true }
       );
+      metrics.writes += 1;
     }
   }
 
+  console.log(
+    `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+  );
   console.log("Backfill completed.");
 }
 

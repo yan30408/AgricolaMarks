@@ -244,8 +244,10 @@ async function main() {
   const useEmulator = detectEmulatorUsage();
   const { credential, projectId } = await initializeFirebase(useEmulator);
   const db = admin.firestore();
+  const metrics = { reads: 0, writes: 0, deletes: 0 };
 
   const snapshot = await db.collection("users").get();
+  metrics.reads += snapshot.size;
   console.log(`Scanned ${snapshot.size} user documents.`);
 
   let pairs = extractMergePairs(snapshot);
@@ -255,6 +257,9 @@ async function main() {
 
   if (pairs.length === 0) {
     console.log("No pending merged users were found.");
+    console.log(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+    );
     process.exit(0);
   }
 
@@ -265,6 +270,9 @@ async function main() {
 
   if (options.dryRun) {
     console.log("Dry-run mode: no changes were made.");
+    console.log(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+    );
     process.exit(0);
   }
 
@@ -292,17 +300,19 @@ async function main() {
         accessToken
       });
       console.log(`Merged ${sourceUid} -> ${targetUid}`, result);
-      await db
-        .collection("users")
-        .doc(targetUid)
-        .update({
-          merged: admin.firestore.FieldValue.delete()
-        })
-        .catch(error => {
-          console.warn(
-            `Failed to clean merged flag on target ${targetUid}: ${error.message}`
-          );
-        });
+      try {
+        await db
+          .collection("users")
+          .doc(targetUid)
+          .update({
+            merged: admin.firestore.FieldValue.delete()
+          });
+        metrics.writes += 1;
+      } catch (error) {
+        console.warn(
+          `Failed to clean merged flag on target ${targetUid}: ${error.message}`
+        );
+      }
       successCount += 1;
     } catch (error) {
       console.error(
@@ -314,6 +324,9 @@ async function main() {
   console.log(
     `Merge process finished. Success: ${successCount}, Failed: ${pairs.length -
       successCount}`
+  );
+  console.log(
+    `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
   );
   process.exit(0);
 }

@@ -195,7 +195,7 @@ function ensureMap(target, key, factory) {
   return target.get(key);
 }
 
-async function commitOperations(db, operations) {
+async function commitOperations(db, operations, metrics = null) {
   if (!operations.length) {
     return;
   }
@@ -204,10 +204,20 @@ async function commitOperations(db, operations) {
   for (const operation of operations) {
     if (operation.type === "set") {
       batch.set(operation.ref, operation.data, { merge: true });
+      if (metrics) {
+        metrics.writes += 1;
+      }
     } else if (operation.type === "update") {
       batch.update(operation.ref, operation.data);
+      if (metrics) {
+        metrics.writes += 1;
+      }
     } else if (operation.type === "delete") {
       batch.delete(operation.ref);
+      if (metrics) {
+        metrics.writes += 1;
+        metrics.deletes += 1;
+      }
     } else {
       throw new Error(`Unknown operation type: ${operation.type}`);
     }
@@ -227,12 +237,15 @@ async function rebuildAllRatings({
   db,
   FieldValue,
   logger = console,
-  logRatings = false
+  logRatings = false,
+  metrics: externalMetrics = null
 }) {
   const log = logger || console;
+  const metrics = externalMetrics || { reads: 0, writes: 0, deletes: 0 };
   log.info("Rebuilding ratings: fetching results...");
 
   const resultsSnapshot = await db.collection("results").get();
+  metrics.reads += resultsSnapshot.size;
   const results = resultsSnapshot.docs.map(doc => ({
     id: doc.id,
     data: doc.data() || {}
@@ -474,7 +487,8 @@ async function rebuildAllRatings({
           updatedAt: FieldValue.serverTimestamp()
         }
       }
-    }))
+    })),
+    metrics
   );
 
   log.info("Updating per-user stats and summaries...");
@@ -482,23 +496,26 @@ async function rebuildAllRatings({
   for (const [uid, statsMap] of statsByUser.entries()) {
     const userRef = db.collection("users").doc(uid);
     let userName = uid;
+    let userSnapshot = null;
     try {
-      const userSnapshot = await userRef.get();
-      if (userSnapshot.exists) {
-        const userData = userSnapshot.data() || {};
-        userName =
-          userData.displayName ||
-          userData.name ||
-          userData.nickname ||
-          userData.fullName ||
-          userName;
-      }
+      userSnapshot = await userRef.get();
     } catch (error) {
       if (log.warn) {
         log.warn(
           `Failed to fetch user profile for ${uid}: ${error?.message || error}`
         );
       }
+    } finally {
+      metrics.reads += 1;
+    }
+    if (userSnapshot && userSnapshot.exists) {
+      const userData = userSnapshot.data() || {};
+      userName =
+        userData.displayName ||
+        userData.name ||
+        userData.nickname ||
+        userData.fullName ||
+        userName;
     }
 
     const statsCollection = userRef.collection("stats");
@@ -525,7 +542,7 @@ async function rebuildAllRatings({
       });
     });
 
-    await commitOperations(db, statOperations);
+    await commitOperations(db, statOperations, metrics);
 
     const desiredRatingModes = new Set(
       (ratingStates.get(uid) || new Map()).keys()
@@ -573,7 +590,7 @@ async function rebuildAllRatings({
       }
     });
 
-    await commitOperations(db, ratingOperations);
+    await commitOperations(db, ratingOperations, metrics);
 
     const aggregates = aggregatesByUser.get(uid);
     if (!aggregates) {
@@ -619,6 +636,7 @@ async function rebuildAllRatings({
       },
       { merge: true }
     );
+    metrics.writes += 1;
   }
 
   sanitizeOrderHistogram(globalStats.orderHistogram);
@@ -655,8 +673,15 @@ async function rebuildAllRatings({
     },
     { merge: true }
   );
+  metrics.writes += 1;
 
+  if (!externalMetrics) {
+    log.info(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+    );
+  }
   log.info("Rebuild completed.");
+  return metrics;
 }
 
 module.exports = {

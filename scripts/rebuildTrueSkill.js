@@ -50,11 +50,20 @@ function initializeFirebase() {
   });
 }
 
-async function acquireRebuildLock(db, FieldValue, reason, resultId = null) {
+async function acquireRebuildLock(
+  db,
+  FieldValue,
+  reason,
+  resultId = null,
+  metrics = null
+) {
   const lockRef = db.collection("meta").doc("ratingLock");
   try {
     await db.runTransaction(async tx => {
       const snapshot = await tx.get(lockRef);
+      if (metrics) {
+        metrics.reads += 1;
+      }
       if (snapshot.exists && snapshot.data()?.locked) {
         throw new Error("LOCKED");
       }
@@ -68,6 +77,9 @@ async function acquireRebuildLock(db, FieldValue, reason, resultId = null) {
         },
         { merge: true }
       );
+      if (metrics) {
+        metrics.writes += 1;
+      }
     });
     return true;
   } catch (error) {
@@ -78,7 +90,7 @@ async function acquireRebuildLock(db, FieldValue, reason, resultId = null) {
   }
 }
 
-async function releaseRebuildLock(db, FieldValue, status) {
+async function releaseRebuildLock(db, FieldValue, status, metrics = null) {
   const lockRef = db.collection("meta").doc("ratingLock");
   await lockRef.set(
     {
@@ -90,20 +102,29 @@ async function releaseRebuildLock(db, FieldValue, status) {
     },
     { merge: true }
   );
+  if (metrics) {
+    metrics.writes += 1;
+  }
 }
 
 async function main() {
   initializeFirebase();
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
+  const metrics = { reads: 0, writes: 0, deletes: 0 };
   const acquired = await acquireRebuildLock(
     db,
     FieldValue,
-    "manual-cli-rebuild"
+    "manual-cli-rebuild",
+    null,
+    metrics
   );
   if (!acquired) {
     console.error(
       "Rating rebuild is already running (meta/ratingLock.locked = true). Aborting."
+    );
+    console.log(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
     );
     process.exit(1);
   }
@@ -113,18 +134,23 @@ async function main() {
       db,
       FieldValue,
       logger: console,
-      logRatings: shouldLogRatings
+      logRatings: shouldLogRatings,
+      metrics
     });
     await synchronizeSummariesWithRatingStates({
       db,
       FieldValue,
-      logger: console
+      logger: console,
+      metrics
     });
   } catch (error) {
     status = "error";
     throw error;
   } finally {
-    await releaseRebuildLock(db, FieldValue, status);
+    await releaseRebuildLock(db, FieldValue, status, metrics);
+    console.log(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+    );
   }
 }
 

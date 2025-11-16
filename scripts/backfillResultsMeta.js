@@ -55,8 +55,10 @@ async function main() {
 
   const db = admin.firestore();
   const resultsRef = db.collection("results");
+  const metrics = { reads: 0, writes: 0, deletes: 0 };
 
   const snapshot = await resultsRef.get();
+  metrics.reads += snapshot.size;
   console.log(`Processing ${snapshot.size} result documents...`);
 
   const updates = [];
@@ -116,6 +118,7 @@ async function main() {
       try {
         await ref.update(payload);
         updatedCount += 1;
+        metrics.writes += 1;
       } catch (error) {
         failedCount += 1;
         console.error(`Update failed for ${ref.path}:`, error);
@@ -134,6 +137,9 @@ async function main() {
 
   console.log(
     `Backfill finished. Updated: ${updatedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`
+  );
+  console.log(
+    `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
   );
 }
 

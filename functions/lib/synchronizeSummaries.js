@@ -3,9 +3,11 @@ const { conservativeRating } = require("./trueskill");
 async function synchronizeSummariesWithRatingStates({
   db,
   FieldValue,
-  logger
+  logger,
+  metrics: externalMetrics = null
 }) {
   const log = logger || console;
+  const metrics = externalMetrics || { reads: 0, writes: 0, deletes: 0 };
   log.info("Synchronizing stats summaries with rating states...");
   let processed = 0;
   let withoutSummary = 0;
@@ -13,6 +15,7 @@ async function synchronizeSummariesWithRatingStates({
   let unchanged = 0;
 
   const usersSnapshot = await db.collection("users").get();
+  metrics.reads += usersSnapshot.size;
   for (const userDoc of usersSnapshot.docs) {
     const uid = userDoc.id;
     const summaryRef = db
@@ -21,6 +24,7 @@ async function synchronizeSummariesWithRatingStates({
       .collection("statsSummary")
       .doc("modes");
     const summarySnapshot = await summaryRef.get();
+    metrics.reads += 1;
     if (!summarySnapshot.exists) {
       withoutSummary += 1;
       continue;
@@ -41,6 +45,7 @@ async function synchronizeSummariesWithRatingStates({
       .doc(uid)
       .collection("ratingStates")
       .get();
+    metrics.reads += ratingStatesSnapshot.size;
 
     const ratingStatesMap = new Map();
     ratingStatesSnapshot.docs.forEach(doc => {
@@ -85,10 +90,12 @@ async function synchronizeSummariesWithRatingStates({
       } else {
         const hadRating =
           modeSummary &&
-          modeSummary.rating !== null && modeSummary.rating !== undefined;
+          modeSummary.rating !== null &&
+          modeSummary.rating !== undefined;
         const hadSigma =
           modeSummary &&
-          modeSummary.sigma !== null && modeSummary.sigma !== undefined;
+          modeSummary.sigma !== null &&
+          modeSummary.sigma !== undefined;
         if (hadRating || hadSigma) {
           log.debug?.("Clearing stats summary rating due to missing state", {
             uid,
@@ -115,6 +122,7 @@ async function synchronizeSummariesWithRatingStates({
         },
         { merge: true }
       );
+      metrics.writes += 1;
       updated += 1;
       log.debug?.("Updated stats summary to reflect rating states", {
         uid,
@@ -130,6 +138,12 @@ async function synchronizeSummariesWithRatingStates({
     withoutSummary,
     unchanged
   });
+  if (!externalMetrics) {
+    log.info(
+      `Firestore usage (estimated): reads=${metrics.reads}, writes=${metrics.writes}, deletes=${metrics.deletes}`
+    );
+  }
+  return metrics;
 }
 
 module.exports = {
