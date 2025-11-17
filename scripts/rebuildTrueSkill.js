@@ -1,54 +1,21 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
 const admin = require("firebase-admin");
 const { rebuildAllRatings } = require("../functions/lib/rebuildAll");
 const {
   synchronizeSummariesWithRatingStates
 } = require("../functions/lib/synchronizeSummaries");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  ensureProductionConsent
+} = require("./shared/firebaseSetup");
 
-dotenv.config();
-const envLocal = path.resolve(".env.local");
-if (fs.existsSync(envLocal)) {
-  dotenv.config({ path: envLocal });
-}
+loadEnv();
 
 const cliArgs = process.argv.slice(2);
 const shouldLogRatings = cliArgs.includes("--log") || cliArgs.includes("-l");
-
-function initializeFirebase() {
-  if (admin.apps.length) {
-    return;
-  }
-
-  const usesEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
-  if (usesEmulator) {
-    const projectId =
-      process.env.GCLOUD_PROJECT ||
-      process.env.GOOGLE_CLOUD_PROJECT ||
-      process.env.FIREBASE_PROJECT ||
-      "demo-emulator-project";
-    admin.initializeApp({ projectId });
-    return;
-  }
-
-  const credentialPath =
-    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-    path.resolve("serviceAccountKey.json");
-  if (!fs.existsSync(credentialPath)) {
-    throw new Error(
-      "Service account key not found. Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json."
-    );
-  }
-  const serviceAccount = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    projectId: serviceAccount.project_id
-  });
-}
 
 async function acquireRebuildLock(
   db,
@@ -108,7 +75,19 @@ async function releaseRebuildLock(db, FieldValue, status, metrics = null) {
 }
 
 async function main() {
-  initializeFirebase();
+  const { usingEmulator, projectId } = initializeFirebaseApp();
+  const confirmed = await ensureProductionConsent({
+    usingEmulator,
+    projectId,
+    scriptName: "rebuildTrueSkill"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
+  if (usingEmulator) {
+    console.log("Firestore emulator detected; using emulator credentials.");
+  }
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
   const metrics = { reads: 0, writes: 0, deletes: 0 };

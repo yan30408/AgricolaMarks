@@ -1,56 +1,30 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
 const admin = require("firebase-admin");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  ensureProductionConsent
+} = require("./shared/firebaseSetup");
 
-dotenv.config();
-const envLocal = path.resolve(".env.local");
-if (fs.existsSync(envLocal)) {
-  dotenv.config({ path: envLocal });
-}
-
-const DEFAULT_SERVICE_ACCOUNT = "serviceAccountKey.json";
-const DEFAULT_EMULATOR_PROJECT =
-  process.env.FIREBASE_PROJECT ||
-  process.env.GCLOUD_PROJECT ||
-  process.env.GOOGLE_CLOUD_PROJECT ||
-  "demo-project";
-
-function resolveServiceAccount() {
-  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (envPath && fs.existsSync(envPath)) {
-    return path.resolve(envPath);
-  }
-  const localPath = path.resolve(DEFAULT_SERVICE_ACCOUNT);
-  if (fs.existsSync(localPath)) {
-    return localPath;
-  }
-  throw new Error(
-    "Service account key not found. Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json."
-  );
-}
+loadEnv();
 
 const DEFAULT_GAME_MODE = "classic";
 
 async function main() {
-  const usingEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
-
+  const { usingEmulator, projectId } = initializeFirebaseApp();
+  const confirmed = await ensureProductionConsent({
+    usingEmulator,
+    projectId,
+    scriptName: "backfillResultsMeta"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
   if (usingEmulator) {
-    admin.initializeApp({
-      projectId: DEFAULT_EMULATOR_PROJECT
-    });
     console.log("Firestore emulator detected; using emulator credentials.");
-  } else {
-    const credentialPath = resolveServiceAccount();
-    const serviceAccount = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id
-    });
   }
 
   const db = admin.firestore();

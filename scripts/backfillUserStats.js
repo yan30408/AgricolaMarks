@@ -1,21 +1,15 @@
 /* eslint-disable no-console */
-const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  ensureProductionConsent
+} = require("./shared/firebaseSetup");
 
-dotenv.config();
-const envLocal = path.resolve(".env.local");
-if (fs.existsSync(envLocal)) {
-  dotenv.config({ path: envLocal });
-}
+loadEnv();
 
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+let db = null;
 
 const MODE_KEYS = ["classic", "classicMoor", "revised", "revisedMoor"];
 const DEFAULT_GAME_MODE = "classic";
@@ -40,6 +34,21 @@ const GAME_MODE_ALIASES = {
 };
 
 async function main() {
+  const { usingEmulator, projectId } = initializeFirebaseApp();
+  const confirmed = await ensureProductionConsent({
+    usingEmulator,
+    projectId,
+    scriptName: "backfillUserStats"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
+  if (usingEmulator) {
+    console.log("Firestore emulator detected; using emulator credentials.");
+  }
+  db = admin.firestore();
+
   const metrics = { reads: 0, writes: 0, deletes: 0 };
 
   const snapshot = await db.collection("results").get();

@@ -13,18 +13,15 @@
  *   - @firebase-admin/auth を含む firebase-admin がインストールされていること
  */
 
-const fs = require("fs");
-const path = require("path");
 const process = require("process");
 const admin = require("firebase-admin");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  ensureProductionConsent
+} = require("./shared/firebaseSetup");
 
-const dotenvLocalPath = path.resolve(".env.local");
-const dotenvDefaultPath = path.resolve(".env");
-if (fs.existsSync(dotenvLocalPath)) {
-  require("dotenv").config({ path: dotenvLocalPath });
-} else if (fs.existsSync(dotenvDefaultPath)) {
-  require("dotenv").config({ path: dotenvDefaultPath });
-}
+loadEnv();
 
 function showUsage() {
   console.log(`Usage:
@@ -58,18 +55,6 @@ function parseArgs() {
   return opts;
 }
 
-function resolveServiceAccount() {
-  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (envPath && fs.existsSync(envPath)) {
-    return envPath;
-  }
-  const localPath = path.resolve("serviceAccountKey.json");
-  if (fs.existsSync(localPath)) {
-    return localPath;
-  }
-  return null;
-}
-
 async function main() {
   const options = parseArgs();
   if (options.help) {
@@ -82,28 +67,30 @@ async function main() {
     process.exit(1);
   }
 
-  const usingEmulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST);
+  const { projectId, credential, usingEmulator } = initializeFirebaseApp({
+    target: "auth"
+  });
+
+  const confirmed = await ensureProductionConsent({
+    usingEmulator,
+    projectId,
+    scriptName: "setAdminClaim"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
+
   if (usingEmulator) {
-    const projectId =
-      process.env.FIREBASE_PROJECT ||
-      process.env.GCLOUD_PROJECT ||
-      "demo-project";
-    admin.initializeApp({ projectId });
     console.log(
       `Using Auth emulator at ${process.env.FIREBASE_AUTH_EMULATOR_HOST}, project ${projectId}`
     );
   } else {
-    const credentialPath = resolveServiceAccount();
-    if (!credentialPath) {
+    if (!credential) {
       throw new Error(
         "Service account key not found. Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json."
       );
     }
-    const serviceAccount = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id
-    });
   }
 
   const claims = options.grant ? { admin: true } : {};

@@ -24,9 +24,14 @@ const fs = require("fs");
 const path = require("path");
 const process = require("process");
 const admin = require("firebase-admin");
-const dotenv = require("dotenv");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  resolveProjectId,
+  ensureProductionConsent,
+  getCallableAuthToken
+} = require("./shared/firebaseSetup");
 
-const DEFAULT_SERVICE_ACCOUNT = "serviceAccountKey.json";
 const REGION = "asia-northeast1";
 const FUNCTION_NAME = "mergeUserAccounts";
 
@@ -59,22 +64,6 @@ function parseArgs() {
   return opts;
 }
 
-function resolveServiceAccount() {
-  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (envPath && fs.existsSync(envPath)) {
-    return path.resolve(envPath);
-  }
-
-  const localPath = path.resolve(DEFAULT_SERVICE_ACCOUNT);
-  if (fs.existsSync(localPath)) {
-    return localPath;
-  }
-
-  throw new Error(
-    "Service account key not found. Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json."
-  );
-}
-
 function loadPairs(options) {
   if (options.file) {
     const filePath = path.resolve(options.file);
@@ -102,11 +91,6 @@ function loadPairs(options) {
   ];
 }
 
-async function getAccessToken(credential) {
-  const token = await credential.getAccessToken();
-  return token.access_token;
-}
-
 function resolveEmulatorOrigin() {
   const explicit =
     process.env.FUNCTIONS_EMULATOR_URL || process.env.FUNCTIONS_EMULATOR_ORIGIN;
@@ -126,36 +110,42 @@ async function callMergeFunction({
   sourceUid,
   targetUid,
   useEmulator,
-  accessToken
+  authToken
 }) {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: useEmulator ? "Bearer owner" : `Bearer ${accessToken}`
+      Authorization: useEmulator ? "Bearer owner" : `Bearer ${authToken}`
     },
     body: JSON.stringify({
       data: { sourceUid, targetUid }
     })
   });
 
-  const json = await response.json();
-  if (!response.ok || json.error) {
+  const raw = await response.text();
+  let payload = null;
+  try {
+    payload = raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    const snippet = raw?.slice(0, 200) || "<empty>";
+    throw new Error(
+      `Failed to parse callable response: ${snippet} (HTTP ${response.status})`
+    );
+  }
+
+  if (!response.ok || payload?.error) {
     const message =
-      json?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+      payload?.error?.message ||
+      `HTTP ${response.status} ${response.statusText}`;
     throw new Error(message);
   }
 
-  return json.result || json.data || json;
+  return payload.result || payload.data || payload;
 }
 
 async function main() {
-  // load env (both .env and .env.local if present)
-  dotenv.config();
-  const envLocal = path.resolve(".env.local");
-  if (fs.existsSync(envLocal)) {
-    dotenv.config({ path: envLocal });
-  }
+  loadEnv();
 
   const options = parseArgs();
   if (options.help) {
@@ -173,30 +163,49 @@ async function main() {
     (process.env.REACT_APP_USE_FUNCTIONS_EMULATOR || "").toLowerCase() ===
       "true" || (process.env.FUNCTIONS_EMULATOR || "").toLowerCase() === "true";
 
-  let accessToken = null;
+  let authToken = null;
   let projectId =
-    process.env.FIREBASE_PROJECT ||
-    process.env.GCLOUD_PROJECT ||
-    process.env.GCP_PROJECT;
+    resolveProjectId() ||
+    process.env.GCP_PROJECT ||
+    process.env.GOOGLE_CLOUD_PROJECT;
 
-  if (useEmulator) {
-    if (!projectId) {
+  if (useEmulator && !projectId) {
+    throw new Error(
+      "Set FIREBASE_PROJECT (or GCLOUD_PROJECT) when using the emulator."
+    );
+  }
+
+  const {
+    credential,
+    projectId: resolvedProjectId,
+    usingEmulator
+  } = initializeFirebaseApp({
+    useEmulator,
+    projectId
+  });
+
+  projectId = resolvedProjectId || projectId;
+
+  const confirmed = await ensureProductionConsent({
+    usingEmulator,
+    projectId,
+    scriptName: "mergeUsers"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
+
+  if (!usingEmulator) {
+    if (!credential) {
       throw new Error(
-        "Set FIREBASE_PROJECT (or GCLOUD_PROJECT) when using the emulator."
+        "Failed to initialize Firebase credential. Check your service account configuration."
       );
     }
-  } else {
-    const credentialPath = resolveServiceAccount();
-    const serviceAccount = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-    const credential = admin.credential.cert(serviceAccount);
-
-    admin.initializeApp({
+    authToken = await getCallableAuthToken({
       credential,
-      projectId: serviceAccount.project_id
+      projectId
     });
-
-    accessToken = await getAccessToken(credential);
-    projectId = serviceAccount.project_id;
   }
 
   const baseUrl = useEmulator
@@ -218,7 +227,7 @@ async function main() {
     try {
       const result = await callMergeFunction({
         url: baseUrl,
-        accessToken,
+        authToken,
         useEmulator,
         sourceUid,
         targetUid

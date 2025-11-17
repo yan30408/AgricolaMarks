@@ -15,19 +15,16 @@ const fs = require("fs");
 const path = require("path");
 const process = require("process");
 const admin = require("firebase-admin");
-const dotenv = require("dotenv");
+const {
+  loadEnv,
+  initializeFirebaseApp,
+  resolveProjectId,
+  ensureProductionConsent,
+  getCallableAuthToken
+} = require("./shared/firebaseSetup");
 
-const DEFAULT_SERVICE_ACCOUNT = "serviceAccountKey.json";
 const REGION = "asia-northeast1";
 const FUNCTION_NAME = "mergeUserAccounts";
-
-function loadEnv() {
-  dotenv.config();
-  const envLocal = path.resolve(".env.local");
-  if (fs.existsSync(envLocal)) {
-    dotenv.config({ path: envLocal });
-  }
-}
 
 function parseArgs() {
   const options = {
@@ -64,27 +61,6 @@ Options:
   --dry-run     実行内容のみ表示（デフォルト）
   --limit       処理するペアの上限を指定
   --help, -h    このメッセージを表示`);
-}
-
-function resolveServiceAccount() {
-  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (envPath && fs.existsSync(envPath)) {
-    return path.resolve(envPath);
-  }
-
-  const localPath = path.resolve(DEFAULT_SERVICE_ACCOUNT);
-  if (fs.existsSync(localPath)) {
-    return localPath;
-  }
-
-  throw new Error(
-    "Service account key not found. Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json."
-  );
-}
-
-async function getAccessToken(credential) {
-  const token = await credential.getAccessToken();
-  return token.access_token;
 }
 
 function resolveEmulatorOrigin() {
@@ -129,31 +105,6 @@ function detectEmulatorUsage() {
     (process.env.REACT_APP_USE_FUNCTIONS_EMULATOR || "").toLowerCase() ===
       "true" || (process.env.FUNCTIONS_EMULATOR || "").toLowerCase() === "true";
   return useFirestoreEmulator || useFunctionsEmulator;
-}
-
-async function initializeFirebase(useEmulator) {
-  if (admin.apps.length) {
-    return { credential: null, projectId: admin.app().options.projectId };
-  }
-
-  if (useEmulator) {
-    const projectId =
-      process.env.FIREBASE_PROJECT ||
-      process.env.GCLOUD_PROJECT ||
-      process.env.GOOGLE_CLOUD_PROJECT ||
-      "demo-project";
-    admin.initializeApp({ projectId });
-    return { credential: null, projectId };
-  }
-
-  const credentialPath = resolveServiceAccount();
-  const serviceAccount = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-  const credential = admin.credential.cert(serviceAccount);
-  admin.initializeApp({
-    credential,
-    projectId: serviceAccount.project_id
-  });
-  return { credential, projectId: serviceAccount.project_id };
 }
 
 function extractMergePairs(snapshot) {
@@ -210,27 +161,38 @@ async function callMergeFunction({
   sourceUid,
   targetUid,
   useEmulator,
-  accessToken
+  authToken
 }) {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: useEmulator ? "Bearer owner" : `Bearer ${accessToken}`
+      Authorization: useEmulator ? "Bearer owner" : `Bearer ${authToken}`
     },
     body: JSON.stringify({
       data: { sourceUid, targetUid }
     })
   });
 
-  const json = await response.json();
-  if (!response.ok || json.error) {
+  const raw = await response.text();
+  let payload = null;
+  try {
+    payload = raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    const snippet = raw?.slice(0, 200) || "<empty>";
+    throw new Error(
+      `Failed to parse callable response: ${snippet} (HTTP ${response.status})`
+    );
+  }
+
+  if (!response.ok || payload?.error) {
     const message =
-      json?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+      payload?.error?.message ||
+      `HTTP ${response.status} ${response.statusText}`;
     throw new Error(message);
   }
 
-  return json.result || json.data || json;
+  return payload.result || payload.data || payload;
 }
 
 async function main() {
@@ -242,7 +204,20 @@ async function main() {
   }
 
   const useEmulator = detectEmulatorUsage();
-  const { credential, projectId } = await initializeFirebase(useEmulator);
+  const { credential, projectId, usingEmulator } = initializeFirebaseApp({
+    useEmulator,
+    projectId: resolveProjectId()
+  });
+  const emulatorMode = usingEmulator;
+  const confirmed = await ensureProductionConsent({
+    usingEmulator: emulatorMode,
+    projectId,
+    scriptName: "reconcileMergedUsers"
+  });
+  if (!confirmed) {
+    console.log("確認が取れなかったため処理を中断します。");
+    return;
+  }
   const db = admin.firestore();
   const metrics = { reads: 0, writes: 0, deletes: 0 };
 
@@ -276,15 +251,18 @@ async function main() {
     process.exit(0);
   }
 
-  let accessToken = null;
-  if (!useEmulator) {
+  let authToken = null;
+  if (!emulatorMode) {
     if (!credential) {
       throw new Error("Failed to initialize credential for production mode.");
     }
-    accessToken = await getAccessToken(credential);
+    authToken = await getCallableAuthToken({
+      credential,
+      projectId
+    });
   }
 
-  const baseUrl = useEmulator
+  const baseUrl = emulatorMode
     ? `${resolveEmulatorOrigin()}/${projectId}/${REGION}/${FUNCTION_NAME}`
     : `https://${REGION}-${projectId}.cloudfunctions.net/${FUNCTION_NAME}`;
 
@@ -296,8 +274,8 @@ async function main() {
         url: baseUrl,
         sourceUid,
         targetUid,
-        useEmulator,
-        accessToken
+        useEmulator: emulatorMode,
+        authToken
       });
       console.log(`Merged ${sourceUid} -> ${targetUid}`, result);
       try {
