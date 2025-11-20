@@ -147,10 +147,18 @@ const PlayerStatistics = props => {
     : null;
 
   const rawStats = useSelector(state => store.getUserStatsById(state, uid));
-  const statistics =
-    rawStats && (!rawStats.mode || rawStats.mode === currentMode)
-      ? rawStats
-      : EMPTY_STATS;
+  const statistics = useMemo(() => {
+    if (!rawStats) {
+      return EMPTY_STATS;
+    }
+    if (rawStats.modes && rawStats.modes[currentMode]) {
+      return rawStats.modes[currentMode];
+    }
+    if (!rawStats.mode || rawStats.mode === currentMode) {
+      return rawStats;
+    }
+    return EMPTY_STATS;
+  }, [rawStats, currentMode]);
   const summary = useSelector(state =>
     store.getUserStatsSummaryById(state, uid)
   );
@@ -166,7 +174,72 @@ const PlayerStatistics = props => {
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [isOpenResultId, setIsOpenResultId] = useState("");
   const [openMerge, setOpenMerge] = useState(false);
-  const statsRequestRef = useRef(false);
+  const statsSubscriptionsRef = useRef(new Map());
+  const summarySubscriptionsRef = useRef(new Map());
+  const isPlayerListOpen = useSelector(state =>
+    Boolean(store.getAppState(state, "isOpenPlayerList"))
+  );
+
+  const cleanupSubscriptions = useCallback(() => {
+    statsSubscriptionsRef.current.forEach(modeMap => {
+      modeMap.forEach(unsubscribe => {
+        if (typeof unsubscribe === "function") {
+          unsubscribe();
+        }
+      });
+    });
+    statsSubscriptionsRef.current.clear();
+    summarySubscriptionsRef.current.forEach(unsubscribe => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    });
+    summarySubscriptionsRef.current.clear();
+  }, []);
+
+  const releaseSummarySubscription = useCallback(targetUid => {
+    if (!targetUid) return;
+    const existing = summarySubscriptionsRef.current.get(targetUid);
+    if (typeof existing === "function") {
+      existing();
+    }
+    summarySubscriptionsRef.current.delete(targetUid);
+  }, []);
+
+  const ensureSummarySubscription = useCallback(
+    targetUid => {
+      if (!targetUid) return;
+      if (summarySubscriptionsRef.current.has(targetUid)) return;
+      const unsubscribe = dispatch(
+        store.subscribeUserStatsSummaryById(targetUid)
+      );
+      if (typeof unsubscribe === "function") {
+        summarySubscriptionsRef.current.set(targetUid, unsubscribe);
+      }
+    },
+    [dispatch]
+  );
+
+  const ensureStatsSubscription = useCallback(
+    (targetUid, modeKey) => {
+      if (!targetUid || !modeKey) return;
+      let modeMap = statsSubscriptionsRef.current.get(targetUid);
+      if (!modeMap) {
+        modeMap = new Map();
+        statsSubscriptionsRef.current.set(targetUid, modeMap);
+      }
+      if (modeMap.has(modeKey)) return;
+      const unsubscribe = dispatch(
+        store.subscribeUserStatsById(targetUid, {
+          gameMode: modeKey
+        })
+      );
+      if (typeof unsubscribe === "function") {
+        modeMap.set(modeKey, unsubscribe);
+      }
+    },
+    [dispatch]
+  );
 
   const modeSummary = summary?.modes?.[currentMode] || null;
   const favoriteColor = summary?.favoriteColor || null;
@@ -189,30 +262,31 @@ const PlayerStatistics = props => {
   );
 
   useEffect(() => {
-    if (!open || !uid) return;
-    if (statsRequestRef.current) {
-      clearTimeout(statsRequestRef.current);
-      statsRequestRef.current = null;
+    if (!open || !uid) {
+      return;
     }
-    statsRequestRef.current = setTimeout(() => {
-      dispatch(
-        store.fetchUserStatsById(uid, {
-          gameMode: currentMode
-        })
-      );
-      dispatch(
-        store.fetchUserStatsSummaryById(uid, {
-          modes: [currentMode]
-        })
-      );
-    }, 200);
+    if (isPlayerListOpen) {
+      releaseSummarySubscription(uid);
+    } else {
+      ensureSummarySubscription(uid);
+    }
+    const modeKey = currentMode || DEFAULT_GAME_MODE;
+    ensureStatsSubscription(uid, modeKey);
+  }, [
+    open,
+    uid,
+    currentMode,
+    isPlayerListOpen,
+    ensureSummarySubscription,
+    ensureStatsSubscription,
+    releaseSummarySubscription
+  ]);
+
+  useEffect(() => {
     return () => {
-      if (statsRequestRef.current) {
-        clearTimeout(statsRequestRef.current);
-        statsRequestRef.current = null;
-      }
+      cleanupSubscriptions();
     };
-  }, [open, uid, dispatch, currentMode]);
+  }, [cleanupSubscriptions]);
 
   const rankData = useMemo(() => {
     const histogram = statistics.rankHistogram || {};

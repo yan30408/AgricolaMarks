@@ -127,6 +127,16 @@ const PlayerList = props => {
   const timer = useRef(null);
   const dialogPaperRef = useRef(null);
   const scrollPositionRef = useRef(0);
+  const summarySubscriptionsRef = useRef(new Map());
+
+  const cleanupSummarySubscriptions = useCallback(() => {
+    summarySubscriptionsRef.current.forEach(unsubscribe => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    });
+    summarySubscriptionsRef.current.clear();
+  }, []);
 
   const open = useSelector(state =>
     store.getAppState(state, "isOpenPlayerList")
@@ -215,21 +225,43 @@ const PlayerList = props => {
   );
 
   useEffect(() => {
+    const subscriptions = summarySubscriptionsRef.current;
     if (!open) {
+      cleanupSummarySubscriptions();
       return;
     }
-    filteredUserIds.forEach(uid => {
-      d(
-        store.fetchUserStatsSummaryById(uid, {
-          modes: [selectedMode]
-        })
-      );
+
+    const nextSet = new Set(filteredUserIds);
+
+    subscriptions.forEach((unsubscribe, uid) => {
+      if (!nextSet.has(uid)) {
+        if (typeof unsubscribe === "function") {
+          unsubscribe();
+        }
+        subscriptions.delete(uid);
+      }
     });
-  }, [open, filteredUserIds, d, selectedMode]);
+
+    filteredUserIds.forEach(uid => {
+      if (subscriptions.has(uid)) {
+        return;
+      }
+      const unsubscribe = d(store.subscribeUserStatsSummaryById(uid));
+      if (typeof unsubscribe === "function") {
+        subscriptions.set(uid, unsubscribe);
+      }
+    });
+  }, [open, filteredUserIds, d, cleanupSummarySubscriptions]);
 
   useEffect(() => {
     return () => clearTimeout(timer.current);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      cleanupSummarySubscriptions();
+    };
+  }, [cleanupSummarySubscriptions]);
 
   return (
     <>

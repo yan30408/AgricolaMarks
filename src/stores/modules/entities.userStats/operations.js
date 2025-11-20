@@ -15,10 +15,57 @@ const EMPTY_SUMMARY = Object.freeze({
   rating: null
 });
 
+const getUserStatsState = (getState, uid) =>
+  getState()?.entities?.userStats?.byId?.[uid] || null;
+
+const toModeKey = mode => mode || DEFAULT_GAME_MODE;
+
+const mergeSummaryIntoState = (dispatch, getState, uid, modeKey, summary) => {
+  const previous = getUserStatsState(getState, uid);
+  const nextModes = { ...(previous?.modes || {}) };
+
+  if (!summary) {
+    delete nextModes[modeKey];
+    const remaining = Object.entries(nextModes);
+    if (remaining.length === 0) {
+      dispatch(actions.remove(uid));
+      return;
+    }
+    const [fallbackMode, fallbackSummary] = remaining[0];
+    dispatch(
+      actions.update(uid, {
+        ...fallbackSummary,
+        mode: fallbackMode,
+        modes: nextModes
+      })
+    );
+    return;
+  }
+
+  const summaryClone = { ...summary };
+  nextModes[modeKey] = summaryClone;
+
+  dispatch(
+    actions.update(uid, {
+      ...summaryClone,
+      mode: modeKey,
+      modes: nextModes
+    })
+  );
+};
+
+const mapSnapshotToEntries = snapshot =>
+  snapshot.docs
+    .filter(doc => doc.id !== "summary" && doc.data()?.type !== "summary")
+    .map(doc => ({
+      resultId: doc.id,
+      ...doc.data()
+    }));
+
 export const fetchUserStatsById = (
   uid,
   { gameMode = DEFAULT_GAME_MODE } = {}
-) => async dispatch => {
+) => async (dispatch, getState) => {
   if (!uid) return;
 
   let query = db
@@ -31,26 +78,53 @@ export const fetchUserStatsById = (
   query = query.orderBy("playedAt", "desc");
 
   const snapshot = await query.get();
-
-  const entries = snapshot.docs
-    .filter(doc => doc.id !== "summary" && doc.data()?.type !== "summary")
-    .map(doc => ({
-      resultId: doc.id,
-      ...doc.data()
-    }));
+  const entries = mapSnapshotToEntries(snapshot);
+  const modeKey = toModeKey(gameMode);
 
   if (entries.length === 0) {
-    dispatch(actions.remove(uid));
+    mergeSummaryIntoState(dispatch, getState, uid, modeKey, null);
     return;
   }
 
   const summary = buildSummary(entries);
-  dispatch(
-    actions.update(uid, {
-      ...summary,
-      mode: gameMode || DEFAULT_GAME_MODE
-    })
+  mergeSummaryIntoState(dispatch, getState, uid, modeKey, summary);
+};
+
+export const subscribeUserStatsById = (
+  uid,
+  { gameMode = DEFAULT_GAME_MODE } = {}
+) => (dispatch, getState) => {
+  if (!uid) return () => {};
+
+  let query = db
+    .collection("users")
+    .doc(uid)
+    .collection("stats");
+  if (gameMode) {
+    query = query.where("gameMode", "==", gameMode);
+  }
+  query = query.orderBy("playedAt", "desc");
+
+  const modeKey = toModeKey(gameMode);
+
+  const unsubscribe = query.onSnapshot(
+    snapshot => {
+      const entries = mapSnapshotToEntries(snapshot);
+      if (entries.length === 0) {
+        mergeSummaryIntoState(dispatch, getState, uid, modeKey, null);
+        return;
+      }
+      const summary = buildSummary(entries);
+      mergeSummaryIntoState(dispatch, getState, uid, modeKey, summary);
+    },
+    error => {
+      console.error("Failed to subscribe user stats", error);
+    }
   );
+
+  return () => {
+    unsubscribe();
+  };
 };
 
 function buildSummary(entries) {

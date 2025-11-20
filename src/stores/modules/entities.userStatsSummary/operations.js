@@ -8,11 +8,79 @@ const KNOWN_MODES = new Set([
   "revisedMoor"
 ]);
 
+const getSummaryState = (getState, uid) =>
+  getState()?.entities?.userStatsSummary?.byId?.[uid] || null;
+
+const createEmptySummaryPayload = () => ({
+  modes: {},
+  colorCounts: {},
+  favoriteColor: null,
+  updatedAt: null
+});
+
+const buildAllowedModes = requestedModes => {
+  if (!Array.isArray(requestedModes) || requestedModes.length === 0) {
+    return null;
+  }
+  const filtered = requestedModes.filter(mode => KNOWN_MODES.has(mode));
+  return filtered.length > 0 ? filtered : null;
+};
+
+const buildModesPayload = (data, allowedModes) => {
+  const rawModes =
+    data.modes && typeof data.modes === "object" ? data.modes : {};
+  const modeFilter = allowedModes ? new Set(allowedModes) : null;
+  const sanitized = {};
+  Object.entries(rawModes).forEach(([modeKey, value]) => {
+    if (modeFilter && !modeFilter.has(modeKey)) {
+      return;
+    }
+    sanitized[modeKey] = sanitizeModeSummary(value);
+  });
+  return sanitized;
+};
+
+const mergeSummaryState = (
+  dispatch,
+  getState,
+  uid,
+  payload,
+  allowedModes = null
+) => {
+  const previous = getSummaryState(getState, uid) || {};
+  const previousModes = previous.modes || {};
+
+  let modes;
+  if (allowedModes) {
+    const merged = { ...previousModes };
+    allowedModes.forEach(modeKey => {
+      if (payload.modes[modeKey]) {
+        merged[modeKey] = payload.modes[modeKey];
+      } else {
+        delete merged[modeKey];
+      }
+    });
+    modes = merged;
+  } else {
+    modes = payload.modes;
+  }
+
+  dispatch(
+    actions.update(uid, {
+      ...previous,
+      ...payload,
+      modes
+    })
+  );
+};
+
 export const fetchUserStatsSummaryById = (
   uid,
   { modes: requestedModes } = {}
-) => async dispatch => {
+) => async (dispatch, getState) => {
   if (!uid) return;
+
+  const allowedModes = buildAllowedModes(requestedModes);
 
   const doc = await db
     .collection("users")
@@ -22,43 +90,61 @@ export const fetchUserStatsSummaryById = (
     .get();
 
   if (!doc.exists) {
-    dispatch(
-      actions.update(uid, {
-        modes: {},
-        updatedAt: null
-      })
-    );
+    dispatch(actions.update(uid, createEmptySummaryPayload()));
     return;
   }
 
   const data = doc.data() || {};
-  const rawModes =
-    data.modes && typeof data.modes === "object" ? data.modes : {};
-  const allowedModes =
-    Array.isArray(requestedModes) && requestedModes.length
-      ? requestedModes.filter(mode => KNOWN_MODES.has(mode))
-      : null;
-
-  const modes = {};
-  Object.entries(rawModes).forEach(([modeKey, value]) => {
-    if (allowedModes && !allowedModes.includes(modeKey)) {
-      return;
-    }
-    modes[modeKey] = sanitizeModeSummary(value);
-  });
-
-  const colorCounts = sanitizeColorCounts(data.colorCounts);
-  const favoriteColor =
-    typeof data.favoriteColor === "string" ? data.favoriteColor : null;
-
   const payload = {
-    modes,
-    colorCounts,
-    favoriteColor,
+    modes: buildModesPayload(data, allowedModes),
+    colorCounts: sanitizeColorCounts(data.colorCounts),
+    favoriteColor:
+      typeof data.favoriteColor === "string" ? data.favoriteColor : null,
     updatedAt: data.updatedAt || null
   };
 
-  dispatch(actions.update(uid, payload));
+  mergeSummaryState(dispatch, getState, uid, payload, allowedModes);
+};
+
+export const subscribeUserStatsSummaryById = (
+  uid,
+  { modes: requestedModes } = {}
+) => (dispatch, getState) => {
+  if (!uid) return () => {};
+
+  const allowedModes = buildAllowedModes(requestedModes);
+
+  const docRef = db
+    .collection("users")
+    .doc(uid)
+    .collection("statsSummary")
+    .doc("modes");
+
+  const unsubscribe = docRef.onSnapshot(
+    doc => {
+      if (!doc.exists) {
+        dispatch(actions.update(uid, createEmptySummaryPayload()));
+        return;
+      }
+      const data = doc.data() || {};
+      const payload = {
+        modes: buildModesPayload(data, allowedModes),
+        colorCounts: sanitizeColorCounts(data.colorCounts),
+        favoriteColor:
+          typeof data.favoriteColor === "string" ? data.favoriteColor : null,
+        updatedAt: data.updatedAt || null
+      };
+
+      mergeSummaryState(dispatch, getState, uid, payload, allowedModes);
+    },
+    error => {
+      console.error("Failed to subscribe user stats summary", error);
+    }
+  );
+
+  return () => {
+    unsubscribe();
+  };
 };
 
 function sanitizeModeSummary(value) {
