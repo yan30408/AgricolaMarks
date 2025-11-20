@@ -73,6 +73,14 @@ const useStyles = makeStyles(() => ({
   emptyState: {
     padding: "8px 0",
     color: "rgba(0, 0, 0, 0.54)"
+  },
+  chartFocusReset: {
+    "& .recharts-surface:focus": {
+      outline: "none"
+    },
+    "& .recharts-surface:focus-visible": {
+      outline: "none"
+    }
   }
 }));
 
@@ -509,11 +517,11 @@ const PlayerStatistics = props => {
                 height={250}
                 data={rankData}
                 margin={{ top: 20, right: 5, left: 5, bottom: 5 }}
+                className={classes.chartFocusReset}
               >
                 <CartesianGrid strokeDasharray="3" stroke={accentColor} />
                 <XAxis dataKey="label" />
                 <YAxis unit="回" allowDecimals={false} />
-                <Tooltip />
                 <Bar dataKey="value" fill="#413ea0">
                   <LabelList dataKey="value" position="top" unit="回" />
                 </Bar>
@@ -531,6 +539,7 @@ const PlayerStatistics = props => {
                   height={150}
                   data={recentData}
                   margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
+                  className={classes.chartFocusReset}
                 >
                   <Tooltip content={renderTooltipContent} />
                   <CartesianGrid
@@ -611,6 +620,7 @@ const PlayerStatistics = props => {
                 height={250}
                 data={orderData}
                 margin={{ top: 20, right: 5, left: 5, bottom: 5 }}
+                className={classes.chartFocusReset}
               >
                 <CartesianGrid strokeDasharray="3" stroke={accentColor} />
                 <XAxis dataKey="label" />
