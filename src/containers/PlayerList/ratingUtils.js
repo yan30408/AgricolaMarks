@@ -1,4 +1,11 @@
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+// 最終プレイ日からの経過日数によって、レートに係数をかける
+const DECAY_THRESHOLDS = [
+  { maxDays: 90, factor: 1 },
+  { maxDays: 180, factor: 0.85 },
+  { maxDays: 365, factor: 0.7 },
+  { maxDays: Infinity, factor: 0.5 }
+];
 
 const toMillis = value => {
   if (!value) {
@@ -40,16 +47,8 @@ export const computeDecayFactor = (lastPlayedAt, now = Date.now()) => {
     return 1;
   }
   const days = diff / MS_PER_DAY;
-  if (days <= 90) {
-    return 1;
-  }
-  if (days <= 180) {
-    return 0.85;
-  }
-  if (days <= 365) {
-    return 0.7;
-  }
-  return 0.5;
+  const entry = DECAY_THRESHOLDS.find(({ maxDays }) => days <= maxDays);
+  return entry ? entry.factor : 1;
 };
 
 export const getAdjustedRating = (modeStats, now = Date.now()) => {
