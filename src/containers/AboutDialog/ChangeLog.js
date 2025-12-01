@@ -1,5 +1,10 @@
 export default [
   {
+    version: "3.0.1",
+    date: "2025.12.1",
+    changes: ["結果一覧の表示を調整しました"]
+  },
+  {
     version: "3.0.0",
     date: "2025.11.4",
     changes: [

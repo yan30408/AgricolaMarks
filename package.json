@@ -1,6 +1,6 @@
 {
   "name": "agricola-marks",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "description": "Agricola Score Caliculator",
   "homepage": "./",
@@ -61,7 +61,8 @@
     "husky": "^3.1.0",
     "lint-staged": "^9.5.0",
     "prettier": "^1.19.1",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "webpack-bundle-analyzer": "^5.0.1"
   },
   "browserslist": {
     "production": [
