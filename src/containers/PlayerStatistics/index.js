@@ -46,7 +46,6 @@ import { format } from "date-fns";
 
 import { Colors, Orders, GameModes, DEFAULT_GAME_MODE } from "Constants";
 import AlertDialog from "components/AlertDialog";
-import ResultRecord from "containers/ResultList/ResultRecord";
 import {
   getAdjustedRating,
   formatAdjustedRating
@@ -179,8 +178,6 @@ const PlayerStatistics = props => {
   // const canMerge = !isAnonymous && uid && uid !== myUid;
   const canMerge = false;
 
-  const [isOpenResult, setIsOpenResult] = useState(false);
-  const [isOpenResultId, setIsOpenResultId] = useState("");
   const [openMerge, setOpenMerge] = useState(false);
   const statsSubscriptionsRef = useRef(new Map());
   const summarySubscriptionsRef = useRef(new Map());
@@ -401,27 +398,6 @@ const PlayerStatistics = props => {
     }
   }, [dispatch, uid, myUid, props.onClose]);
 
-  const onSelect = useCallback(event => {
-    const { payload } = event;
-    if (!payload) {
-      return;
-    }
-    const resultId = payload.id ?? payload.resultId;
-    if (!resultId) {
-      return;
-    }
-    setIsOpenResult(true);
-    setIsOpenResultId(resultId);
-  }, []);
-
-  const onDeselect = useCallback(
-    allClose => {
-      if (allClose === true) props.onClose(true);
-      setIsOpenResult(false);
-    },
-    [props.onClose]
-  );
-
   if (!user) {
     return null;
   }
@@ -558,13 +534,7 @@ const PlayerStatistics = props => {
                     allowDecimals={false}
                     reversed
                   />
-                  <Line
-                    dataKey="rank"
-                    stroke="#413ea0"
-                    activeDot={{
-                      onClick: onSelect
-                    }}
-                  />
+                  <Line dataKey="rank" stroke="#413ea0" />
                 </LineChart>
               ) : (
                 <Typography variant="body2" className={classes.emptyState}>
@@ -684,11 +654,6 @@ const PlayerStatistics = props => {
           本当によろしいですか？
         </AlertDialog>
       </Dialog>
-      <ResultRecord
-        open={isOpenResult}
-        resultId={isOpenResultId}
-        onClose={onDeselect}
-      />
     </>
   );
 };
