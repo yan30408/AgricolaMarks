@@ -4,7 +4,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from "react";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
@@ -25,8 +24,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import ResultListListItem from "containers/ResultList/ResultListListItem";
 import ResultRecord from "containers/ResultList/ResultRecord";
 
-import { db } from "initializer";
 import { RESULTS_PAGE_SIZE } from "stores/modules/entities.results/types";
+import { DEFAULT_GAME_MODE } from "Constants";
 import { format } from "date-fns";
 
 const SCROLL_THRESHOLD = 48;
@@ -85,25 +84,57 @@ const PlayerResultHistoryDialog = props => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const { open, uid, mode, onClose } = props;
+  const modeKey = mode || DEFAULT_GAME_MODE;
 
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE);
   const [isOpenResult, setIsOpenResult] = useState(false);
   const [activeResultId, setActiveResultId] = useState("");
 
-  const listRef = useRef(null);
-  const cursorRef = useRef(null);
-  const loadingRef = useRef(false);
-  const fetchedIdsRef = useRef(new Set());
+  const resultIds = useSelector(state =>
+    store.getUserResultIdsByMode(state, uid, modeKey)
+  );
+  const totalCount = Array.isArray(resultIds) ? resultIds.length : 0;
+
+  const visibleIds = useMemo(() => {
+    if (!totalCount) {
+      return [];
+    }
+    return resultIds.slice(0, visibleCount);
+  }, [resultIds, totalCount, visibleCount]);
+
+  useEffect(() => {
+    if (!open || !uid) return;
+    dispatch(
+      store.ensureUserStatsById(uid, {
+        gameMode: modeKey
+      })
+    );
+  }, [dispatch, modeKey, open, uid]);
+
+  useEffect(() => {
+    if (!open) return;
+    visibleIds.forEach(id => {
+      dispatch(store.ensureResultById(id));
+    });
+  }, [dispatch, open, visibleIds]);
+
+  useEffect(() => {
+    if (!open) {
+      setVisibleCount(RESULTS_PAGE_SIZE);
+      setIsOpenResult(false);
+      setActiveResultId("");
+      return;
+    }
+    setVisibleCount(RESULTS_PAGE_SIZE);
+  }, [open, uid, modeKey]);
 
   const results = useSelector(
-    state => entries.map(id => store.getResultById(state, id)),
+    state => visibleIds.map(id => store.getResultById(state, id)),
     shallowEqual
   );
 
   const items = useMemo(() => {
-    return entries.map((id, index) => {
+    return visibleIds.map((id, index) => {
       const result = results[index] || null;
       const playedAt = result?.playedAt || result?.date || null;
       const dayKey = formatDayKey(playedAt);
@@ -123,70 +154,13 @@ const PlayerResultHistoryDialog = props => {
         showHeader
       };
     });
-  }, [entries, results]);
+  }, [results, visibleIds]);
 
-  const setLoadingState = useCallback(value => {
-    loadingRef.current = value;
-    setLoading(value);
-  }, []);
-
-  const fetchPage = useCallback(
-    async (reset = false) => {
-      if (!uid || loadingRef.current) {
-        return;
-      }
-      setLoadingState(true);
-      try {
-        let query = db
-          .collection("users")
-          .doc(uid)
-          .collection("stats");
-        if (mode) {
-          query = query.where("gameMode", "==", mode);
-        }
-        query = query.orderBy("playedAt", "desc").limit(RESULTS_PAGE_SIZE);
-        if (!reset && cursorRef.current) {
-          query = query.startAfter(cursorRef.current);
-        }
-        const snapshot = await query.get();
-        const docs = snapshot.docs.filter(doc => {
-          if (doc.id === "summary") return false;
-          const data = doc.data() || {};
-          if (data.type === "summary") return false;
-          return true;
-        });
-        if (reset) {
-          fetchedIdsRef.current = new Set();
-        }
-        const nextIds = [];
-        for (const doc of docs) {
-          const resultId = doc.id;
-          if (!resultId || fetchedIdsRef.current.has(resultId)) {
-            continue;
-          }
-          fetchedIdsRef.current.add(resultId);
-          const result = await dispatch(store.ensureResultById(resultId));
-          if (result) {
-            nextIds.push(resultId);
-          }
-        }
-        if (docs.length > 0) {
-          cursorRef.current = docs[docs.length - 1];
-        }
-        setEntries(prev => (reset ? nextIds : [...prev, ...nextIds]));
-        setHasMore(docs.length === RESULTS_PAGE_SIZE);
-      } catch (error) {
-        console.error("Failed to fetch player result history", error);
-      } finally {
-        setLoadingState(false);
-      }
-    },
-    [dispatch, mode, setLoadingState, uid]
-  );
+  const hasMore = totalCount > 0 && visibleCount < totalCount;
 
   const handleScroll = useCallback(
     event => {
-      if (!hasMore || loadingRef.current) {
+      if (!hasMore) {
         return;
       }
       const target = event.currentTarget;
@@ -194,42 +168,11 @@ const PlayerResultHistoryDialog = props => {
         target.scrollHeight - target.scrollTop - target.clientHeight <
         SCROLL_THRESHOLD;
       if (isNearBottom) {
-        fetchPage(false);
+        setVisibleCount(prev => Math.min(prev + RESULTS_PAGE_SIZE, totalCount));
       }
     },
-    [fetchPage, hasMore]
+    [hasMore, totalCount]
   );
-
-  const ensureInitialPage = useCallback(() => {
-    const target = listRef.current;
-    if (!target || !hasMore || loadingRef.current) {
-      return;
-    }
-    const remaining = target.scrollHeight - target.clientHeight;
-    if (remaining <= SCROLL_THRESHOLD) {
-      fetchPage(false);
-    }
-  }, [fetchPage, hasMore]);
-
-  useEffect(() => {
-    if (!open || !uid) {
-      return;
-    }
-    setEntries([]);
-    setHasMore(true);
-    cursorRef.current = null;
-    fetchedIdsRef.current = new Set();
-    fetchPage(true);
-  }, [fetchPage, open, uid, mode]);
-
-  useEffect(() => {
-    if (!open) {
-      setIsOpenResult(false);
-      setActiveResultId("");
-      return;
-    }
-    ensureInitialPage();
-  }, [open, entries.length, ensureInitialPage]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -244,7 +187,7 @@ const PlayerResultHistoryDialog = props => {
     setIsOpenResult(false);
   }, []);
 
-  const hasData = entries.length > 0;
+  const hasData = totalCount > 0;
 
   return (
     <>
@@ -264,7 +207,7 @@ const PlayerResultHistoryDialog = props => {
             </Typography>
           </Toolbar>
         </AppBar>
-        <List ref={listRef} className={classes.list} onScroll={handleScroll}>
+        <List className={classes.list} onScroll={handleScroll}>
           {items.map(item => (
             <React.Fragment key={item.resultId}>
               {item.showHeader ? (
@@ -278,16 +221,11 @@ const PlayerResultHistoryDialog = props => {
               />
             </React.Fragment>
           ))}
-          {!loading && !hasData ? (
+          {!open || hasData ? null : (
             <ListSubheader className={classes.subheader}>
               データがありません
             </ListSubheader>
-          ) : null}
-          {loading ? (
-            <ListSubheader className={classes.subheader}>
-              読み込み中...
-            </ListSubheader>
-          ) : null}
+          )}
         </List>
       </Dialog>
       <ResultRecord

@@ -158,6 +158,7 @@ const PlayerList = props => {
   }, [statisticsType, filteredUserIds, allStatistics, selectedMode]);
 
   const onClose = useCallback(() => {
+    d(store.resetUserStatsCache());
     d(
       store.appStateMutate(state => {
         state.isOpenPlayerList = false;

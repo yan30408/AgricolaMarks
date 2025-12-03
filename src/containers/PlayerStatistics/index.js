@@ -183,21 +183,12 @@ const PlayerStatistics = props => {
   const canMerge = false;
 
   const [openMerge, setOpenMerge] = useState(false);
-  const statsSubscriptionsRef = useRef(new Map());
   const summarySubscriptionsRef = useRef(new Map());
   const isPlayerListOpen = useSelector(state =>
     Boolean(store.getAppState(state, "isOpenPlayerList"))
   );
 
   const cleanupSubscriptions = useCallback(() => {
-    statsSubscriptionsRef.current.forEach(modeMap => {
-      modeMap.forEach(unsubscribe => {
-        if (typeof unsubscribe === "function") {
-          unsubscribe();
-        }
-      });
-    });
-    statsSubscriptionsRef.current.clear();
     summarySubscriptionsRef.current.forEach(unsubscribe => {
       if (typeof unsubscribe === "function") {
         unsubscribe();
@@ -224,27 +215,6 @@ const PlayerStatistics = props => {
       );
       if (typeof unsubscribe === "function") {
         summarySubscriptionsRef.current.set(targetUid, unsubscribe);
-      }
-    },
-    [dispatch]
-  );
-
-  const ensureStatsSubscription = useCallback(
-    (targetUid, modeKey) => {
-      if (!targetUid || !modeKey) return;
-      let modeMap = statsSubscriptionsRef.current.get(targetUid);
-      if (!modeMap) {
-        modeMap = new Map();
-        statsSubscriptionsRef.current.set(targetUid, modeMap);
-      }
-      if (modeMap.has(modeKey)) return;
-      const unsubscribe = dispatch(
-        store.subscribeUserStatsById(targetUid, {
-          gameMode: modeKey
-        })
-      );
-      if (typeof unsubscribe === "function") {
-        modeMap.set(modeKey, unsubscribe);
       }
     },
     [dispatch]
@@ -280,16 +250,27 @@ const PlayerStatistics = props => {
       ensureSummarySubscription(uid);
     }
     const modeKey = currentMode || DEFAULT_GAME_MODE;
-    ensureStatsSubscription(uid, modeKey);
+    dispatch(
+      store.ensureUserStatsById(uid, {
+        gameMode: modeKey
+      })
+    );
   }, [
     open,
     uid,
     currentMode,
     isPlayerListOpen,
     ensureSummarySubscription,
-    ensureStatsSubscription,
-    releaseSummarySubscription
+    releaseSummarySubscription,
+    dispatch
   ]);
+
+  useEffect(() => {
+    if (open || !uid) {
+      return;
+    }
+    releaseSummarySubscription(uid);
+  }, [open, releaseSummarySubscription, uid]);
 
   useEffect(() => {
     return () => {
