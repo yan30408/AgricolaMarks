@@ -132,7 +132,7 @@ const ResultList = props => {
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h6" color="inherit" className={classes.flex}>
-              結果一覧
+              Result List
             </Typography>
           </Toolbar>
         </AppBar>

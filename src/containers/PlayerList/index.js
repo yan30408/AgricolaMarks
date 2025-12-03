@@ -278,7 +278,7 @@ const PlayerList = props => {
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h6" color="inherit" className={classes.flex}>
-              プレイヤー一覧
+              Player List
             </Typography>
           </Toolbar>
         </AppBar>

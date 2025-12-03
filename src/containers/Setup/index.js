@@ -163,7 +163,7 @@ const FullScreenDialog = props => {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" color="inherit" className={classes.flex}>
-            ゲーム設定
+            Game Setup
           </Typography>
           <IconButton color="inherit" onClick={onClickReset}>
             <RefreshIcon />

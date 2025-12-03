@@ -260,7 +260,7 @@ const PlayerResultHistoryDialog = props => {
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h6" color="inherit" className={classes.flex}>
-              戦績一覧
+              Match History
             </Typography>
           </Toolbar>
         </AppBar>
