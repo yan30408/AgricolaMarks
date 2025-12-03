@@ -2,7 +2,8 @@ import {
   RESULTS_FETCH_REQUEST,
   RESULTS_FETCH_SUCCESS,
   RESULTS_FETCH_FAILURE,
-  RESULTS_RESET
+  RESULTS_RESET,
+  RESULTS_UPSERT
 } from "./types";
 
 const initialState = {
@@ -74,6 +75,21 @@ export default function reducer(state = initialState, action = {}) {
     }
     case RESULTS_RESET: {
       return initialState;
+    }
+    case RESULTS_UPSERT: {
+      const items = Array.isArray(action.payload)
+        ? action.payload
+        : [action.payload];
+      const byId = { ...state.byId };
+      items.forEach(item => {
+        if (item && item._id) {
+          byId[item._id] = item;
+        }
+      });
+      return {
+        ...state,
+        byId
+      };
     }
     default:
       return state;

@@ -2,7 +2,8 @@ import {
   fetchResultsRequest,
   fetchResultsSuccess,
   fetchResultsFailure,
-  resetResultsState
+  resetResultsState,
+  resultsUpsert
 } from "./actions";
 import { RESULTS_PAGE_SIZE } from "./types";
 import { db, FieldPath, Timestamp, FieldValue } from "initializer";
@@ -241,5 +242,25 @@ export const deleteResult = (
   } catch (error) {
     handleOperationError(error);
     return false;
+  }
+};
+
+export const ensureResultById = id => async (dispatch, getState) => {
+  if (!id) return null;
+  const existing = getState()?.entities?.results?.byId?.[id] ?? null;
+  if (existing) {
+    return existing;
+  }
+  try {
+    const snapshot = await resultsRef.doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const item = normalizeResultDoc(snapshot);
+    dispatch(resultsUpsert([item]));
+    return item;
+  } catch (error) {
+    console.error("Failed to fetch result by id", error);
+    return null;
   }
 };

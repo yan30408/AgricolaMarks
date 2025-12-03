@@ -2,7 +2,8 @@ import {
   RESULTS_FETCH_REQUEST,
   RESULTS_FETCH_SUCCESS,
   RESULTS_FETCH_FAILURE,
-  RESULTS_RESET
+  RESULTS_RESET,
+  RESULTS_UPSERT
 } from "./types";
 
 export const fetchResultsRequest = payload => ({
@@ -22,4 +23,9 @@ export const fetchResultsFailure = payload => ({
 
 export const resetResultsState = () => ({
   type: RESULTS_RESET
+});
+
+export const resultsUpsert = payload => ({
+  type: RESULTS_UPSERT,
+  payload
 });

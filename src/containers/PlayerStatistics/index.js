@@ -26,10 +26,12 @@ import {
   Slide,
   Paper,
   TextField,
-  MenuItem
+  MenuItem,
+  Button
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
 import MergeIcon from "@mui/icons-material/PeopleAlt";
+import ChevronRightIcon from "@mui/icons-material/ArrowForwardIos";
 import {
   BarChart,
   Bar,
@@ -46,6 +48,7 @@ import { format } from "date-fns";
 
 import { Colors, Orders, GameModes, DEFAULT_GAME_MODE } from "Constants";
 import AlertDialog from "components/AlertDialog";
+import PlayerResultHistoryDialog from "./PlayerResultHistoryDialog";
 import {
   getAdjustedRating,
   formatAdjustedRating
@@ -143,6 +146,7 @@ const PlayerStatistics = props => {
   const [currentMode, setCurrentMode] = useState(
     requestedMode || DEFAULT_GAME_MODE
   );
+  const [isOpenHistory, setIsOpenHistory] = useState(false);
 
   const user = useSelector(state => store.getUserById(state, uid));
   const createdByTwitterId = useSelector(state => {
@@ -398,6 +402,14 @@ const PlayerStatistics = props => {
     }
   }, [dispatch, uid, myUid, props.onClose]);
 
+  const onOpenHistory = useCallback(() => {
+    setIsOpenHistory(true);
+  }, []);
+
+  const onCloseHistory = useCallback(() => {
+    setIsOpenHistory(false);
+  }, []);
+
   if (!user) {
     return null;
   }
@@ -510,32 +522,42 @@ const PlayerStatistics = props => {
             </ListItem>
             <ListItem divider>
               {recentData.length > 0 ? (
-                <LineChart
-                  width={300}
-                  height={150}
-                  data={recentData}
-                  margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
-                  className={classes.chartFocusReset}
-                >
-                  <Tooltip content={renderTooltipContent} />
-                  <CartesianGrid
-                    strokeDasharray="3"
-                    stroke={accentColor}
-                    vertical={false}
-                  />
-                  <YAxis
-                    type="number"
-                    domain={[1, RANK_LABELS.length]}
-                    ticks={Array.from(
-                      { length: RANK_LABELS.length },
-                      (_, index) => index + 1
-                    )}
-                    tickFormatter={value => `${value}位`}
-                    allowDecimals={false}
-                    reversed
-                  />
-                  <Line dataKey="rank" stroke="#413ea0" />
-                </LineChart>
+                <div style={{ width: "100%" }}>
+                  <LineChart
+                    width={300}
+                    height={150}
+                    data={recentData}
+                    margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
+                    className={classes.chartFocusReset}
+                  >
+                    <Tooltip content={renderTooltipContent} />
+                    <CartesianGrid
+                      strokeDasharray="3"
+                      stroke={accentColor}
+                      vertical={false}
+                    />
+                    <YAxis
+                      type="number"
+                      domain={[1, RANK_LABELS.length]}
+                      ticks={Array.from(
+                        { length: RANK_LABELS.length },
+                        (_, index) => index + 1
+                      )}
+                      tickFormatter={value => `${value}位`}
+                      allowDecimals={false}
+                      reversed
+                    />
+                    <Line dataKey="rank" stroke="#413ea0" />
+                  </LineChart>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <Button
+                      onClick={onOpenHistory}
+                      endIcon={<ChevronRightIcon />}
+                    >
+                      過去の戦績一覧を表示
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <Typography variant="body2" className={classes.emptyState}>
                   データがありません
@@ -654,6 +676,12 @@ const PlayerStatistics = props => {
           本当によろしいですか？
         </AlertDialog>
       </Dialog>
+      <PlayerResultHistoryDialog
+        open={isOpenHistory}
+        uid={uid}
+        mode={currentMode}
+        onClose={onCloseHistory}
+      />
     </>
   );
 };
